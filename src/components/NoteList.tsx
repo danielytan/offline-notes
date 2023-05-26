@@ -1,5 +1,6 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import { db, Note } from '../api/database';
+import { Container, Heading, Button } from '../styles/styled';
 
 export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -39,22 +40,22 @@ export default function NoteList() {
   };
 
   return (
-    <div>
-      <h1>Notes</h1>
+    <Container>
+      <Heading>Notes</Heading>
       <input type="text" value={noteTitle} onChange={handleNoteTitleChange} />
       <button onClick={handleNoteSubmit}>Add Note</button>
       <ul>
       {notes.map((note) => (
         <li key={note.id}>
           {note.title}
-          <button onClick={() => {
+          <Button onClick={() => {
             if (note.id !== undefined) {
               handleNoteDelete(note.id);
             }
-          }}>Delete</button>
+          }}>Delete</Button>
         </li>
       ))}
       </ul>
-    </div>
+    </Container>
   );
 }
