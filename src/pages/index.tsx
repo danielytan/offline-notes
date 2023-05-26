@@ -1,13 +1,10 @@
 import NoteList from '../components/NoteList';
-import NoteEditor from '../components/NoteEditor';
 
-const Home = () => {
+export default function Notes() {
   return (
     <div>
-      <NoteEditor />
+      <h1>Offline Notes</h1>
       <NoteList />
     </div>
   );
-};
-
-export default Home;
+}
