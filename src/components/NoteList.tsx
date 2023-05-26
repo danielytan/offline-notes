@@ -9,39 +9,72 @@ const NotesContainer = styled(Container)`
   align-items: center;
 `;
 
-const InputContainer = styled.div`
+const NoteListWrapper = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 1rem;
+  width: 90%; /* Adjust the width to a percentage value */
+  margin: auto; /* Add margin: auto to center the wrapper */
 `;
 
-const NoteInput = styled.input`
+
+const NoteForm = styled.form`
+  display: flex;
+  align-items: stretch;
+  align-self: center; /* Center the form horizontally */
+`;
+
+const NoteInput = styled.textarea`
+  height: 100px;
+  width: 100%;
+  resize: vertical;
   margin-right: 1rem;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  flex-grow: 1;
 `;
 
-const StyledButton = styled(Button)`
-  margin-left: 1rem;
+const AddNoteButton = styled(Button)`
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 1rem;
 `;
 
-interface NoteItemProps {
-  note: Note;
-  onDelete: (noteId: number) => void;
-}
+const NoteItem = styled.li`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  max-height: 150px;
+  overflow-y: auto;
+  width: 400px;
+  word-wrap: break-word;
+`;
 
-const NoteItem: React.FC<NoteItemProps> = ({ note, onDelete }) => {
-  const handleDeleteClick = () => {
-    if (note.id !== undefined) {
-      onDelete(note.id);
-    }
-  };
+const Content = styled.div`
+  flex-grow: 1;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-y: auto;
+  max-width: 100%;
+  padding-bottom: 1rem; /* Add padding to shift the text above the delete button */
+`;
 
-  return (
-    <li>
-      {note.title}
-      <StyledButton onClick={handleDeleteClick}>Delete</StyledButton>
-    </li>
-  );
-};
+const DeleteButton = styled(Button)`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: 0.5rem;
+  z-index: 1;
+`;
 
 export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -51,21 +84,23 @@ export default function NoteList() {
     fetchNotes();
   }, []);
 
-  const handleNoteTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleNoteTitleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setNoteTitle(event.target.value);
   };
 
-  const handleNoteSubmit = () => {
+  const handleNoteSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); // Prevent the default form submission behavior
+  
     if (noteTitle.trim() === '') {
       return; // Don't add empty notes
     }
-
+  
     const newNote: Note = {
       id: Date.now(),
       title: noteTitle,
-      content: '',
+      content: ''
     };
-
+  
     setNotes([...notes, newNote]);
     setNoteTitle('');
   };
@@ -83,15 +118,31 @@ export default function NoteList() {
   return (
     <NotesContainer>
       <Heading>Notes</Heading>
-      <InputContainer>
-        <NoteInput type="text" value={noteTitle} onChange={handleNoteTitleChange} />
-        <StyledButton onClick={handleNoteSubmit}>Add Note</StyledButton>
-      </InputContainer>
-      <ul>
-        {notes.map((note) => (
-          <NoteItem key={note.id} note={note} onDelete={handleNoteDelete} />
-        ))}
-      </ul>
+      <NoteListWrapper>
+        <NoteForm onSubmit={handleNoteSubmit}>
+          <NoteInput
+            rows={3}
+            value={noteTitle}
+            onChange={handleNoteTitleChange}
+            placeholder="Enter your note..."
+          />
+          <AddNoteButton type="submit">Add Note</AddNoteButton>
+        </NoteForm>
+        <ul>
+          {notes.map((note, index) => (
+            <NoteItem key={index}>
+              <Content>{note.title}</Content>
+              <DeleteButton onClick={() => {
+                if (note.id !== undefined) {
+                  handleNoteDelete(note.id)
+                }
+              }}>
+                Delete
+              </DeleteButton>
+            </NoteItem>
+          ))}
+        </ul>
+      </NoteListWrapper>
     </NotesContainer>
   );
 }
