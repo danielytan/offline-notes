@@ -1,6 +1,27 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import { db, Note } from '../api/database';
 import { Container, Heading, Button } from '../styles/styled';
+import styled from 'styled-components';
+
+const NotesContainer = styled(Container)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const InputContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+
+const NoteInput = styled.input`
+  margin-right: 1rem;
+`;
+
+const StyledButton = styled(Button)`
+  margin-left: 1rem;
+`;
 
 export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -40,22 +61,28 @@ export default function NoteList() {
   };
 
   return (
-    <Container>
+    <NotesContainer>
       <Heading>Notes</Heading>
-      <input type="text" value={noteTitle} onChange={handleNoteTitleChange} />
-      <button onClick={handleNoteSubmit}>Add Note</button>
+      <InputContainer>
+        <NoteInput type="text" value={noteTitle} onChange={handleNoteTitleChange} />
+        <StyledButton onClick={handleNoteSubmit}>Add Note</StyledButton>
+      </InputContainer>
       <ul>
-      {notes.map((note) => (
-        <li key={note.id}>
-          {note.title}
-          <Button onClick={() => {
-            if (note.id !== undefined) {
-              handleNoteDelete(note.id);
-            }
-          }}>Delete</Button>
-        </li>
-      ))}
+        {notes.map((note) => (
+          <li key={note.id}>
+            {note.title}
+            <StyledButton
+              onClick={() => {
+                if (note.id !== undefined) {
+                  handleNoteDelete(note.id);
+                }
+              }}
+            >
+              Delete
+            </StyledButton>
+          </li>
+        ))}
       </ul>
-    </Container>
+    </NotesContainer>
   );
 }
