@@ -23,6 +23,26 @@ const StyledButton = styled(Button)`
   margin-left: 1rem;
 `;
 
+interface NoteItemProps {
+  note: Note;
+  onDelete: (noteId: number) => void;
+}
+
+const NoteItem: React.FC<NoteItemProps> = ({ note, onDelete }) => {
+  const handleDeleteClick = () => {
+    if (note.id !== undefined) {
+      onDelete(note.id);
+    }
+  };
+
+  return (
+    <li>
+      {note.title}
+      <StyledButton onClick={handleDeleteClick}>Delete</StyledButton>
+    </li>
+  );
+};
+
 export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [noteTitle, setNoteTitle] = useState('');
@@ -39,13 +59,13 @@ export default function NoteList() {
     if (noteTitle.trim() === '') {
       return; // Don't add empty notes
     }
-    
+
     const newNote: Note = {
       id: Date.now(),
       title: noteTitle,
-      content: ''
+      content: '',
     };
-    
+
     setNotes([...notes, newNote]);
     setNoteTitle('');
   };
@@ -69,18 +89,7 @@ export default function NoteList() {
       </InputContainer>
       <ul>
         {notes.map((note) => (
-          <li key={note.id}>
-            {note.title}
-            <StyledButton
-              onClick={() => {
-                if (note.id !== undefined) {
-                  handleNoteDelete(note.id);
-                }
-              }}
-            >
-              Delete
-            </StyledButton>
-          </li>
+          <NoteItem key={note.id} note={note} onDelete={handleNoteDelete} />
         ))}
       </ul>
     </NotesContainer>
