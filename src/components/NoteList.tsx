@@ -1,7 +1,7 @@
 import { useEffect, useState, ChangeEvent } from 'react';
-import { db, Note } from '../api/database';
 import { Container, Heading, Button } from '../styles/styled';
 import styled from 'styled-components';
+import axios from 'axios';
 
 const NotesContainer = styled(Container)`
   display: flex;
@@ -76,6 +76,12 @@ const DeleteButton = styled(Button)`
   z-index: 1;
 `;
 
+interface Note {
+  _id?: number;
+  title: string;
+  content: string;
+}
+
 export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [noteTitle, setNoteTitle] = useState('');
@@ -88,7 +94,7 @@ export default function NoteList() {
     setNoteTitle(event.target.value);
   };
 
-  const handleNoteSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNoteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Prevent the default form submission behavior
   
     if (noteTitle.trim() === '') {
@@ -96,23 +102,54 @@ export default function NoteList() {
     }
   
     const newNote: Note = {
-      id: Date.now(),
       title: noteTitle,
-      content: ''
+      content: '',
     };
   
-    setNotes([...notes, newNote]);
-    setNoteTitle('');
+    try {
+      // Send a POST request to the save-note endpoint
+      const response = await fetch('/api/save-note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newNote),
+      });
+  
+      if (response.ok) {
+        const savedNote = await response.json();
+        newNote._id = savedNote.insertedId
+        setNotes((prevNotes) => [...prevNotes, newNote]); // Use the functional form of setNotes
+        setNoteTitle('');
+      } else {
+        console.error('Error saving note:', response.status);
+      }
+    } catch (error) {
+      console.error('Error saving note:', error);
+    }
   };
 
-  const handleNoteDelete = (noteId: number) => {
-    const updatedNotes = notes.filter((note) => note.id !== noteId);
-    setNotes(updatedNotes);
+  const handleNoteDelete = async (noteId: number) => {
+    try {
+      // Make a DELETE request to the API endpoint
+      await axios.delete(`/api/delete-note?id=${noteId}`);
+  
+      // Update the state with the filtered notes
+      const updatedNotes = notes.filter((note) => note._id !== noteId);
+      setNotes(updatedNotes);
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
   };
 
   const fetchNotes = async () => {
-    const allNotes = await db.notes.toArray();
-    setNotes(allNotes);
+    try {
+      const response = await axios.get('/api/notes');
+      const allNotes = response.data;
+      setNotes(allNotes);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
   };
 
   return (
@@ -133,8 +170,8 @@ export default function NoteList() {
             <NoteItem key={index}>
               <Content>{note.title}</Content>
               <DeleteButton onClick={() => {
-                if (note.id !== undefined) {
-                  handleNoteDelete(note.id)
+                if (note._id !== undefined) {
+                  handleNoteDelete(note._id)
                 }
               }}>
                 Delete

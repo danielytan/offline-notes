@@ -1,47 +1,27 @@
-// sw.js
-const CACHE_NAME = 'offline-notes-cache-v1';
-const urlsToCache = ['/'];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
-
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response;
-      }
-
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-
-        const responseToCache = response.clone();
-
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-
-        return response;
-      });
-    })
-  );
+  // Intercept the fetch request
+  if (event.request.url.includes('/api/save-note')) {
+    event.respondWith(handleSaveNoteRequest(event.request));
+  }
 });
+
+async function handleSaveNoteRequest(request) {
+  try {
+    // Extract the note data from the request body
+    const noteData = await request.clone().json();
+
+    // Save the note data to the database using an API endpoint
+    const response = await fetch('/api/save-note', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(noteData),
+    });
+
+    // Return the response from the API endpoint
+    return response;
+  } catch (error) {
+    // Handle any errors
+    console.error('Error saving note:', error);
+    return new Response('Error saving note', { status: 500 });
+  }
+}
