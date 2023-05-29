@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
       // Fetch all the notes from the 'notes' collection
       const collection = db.collection('notes')
-      const notes = await collection.find({}).toArray();
+      const notes = (await collection.find({}).toArray()).reverse();
 
       res.status(200).json(notes);
     } catch (error) {

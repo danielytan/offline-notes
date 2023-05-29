@@ -119,7 +119,7 @@ export default function NoteList() {
       if (response.ok) {
         const savedNote = await response.json();
         newNote._id = savedNote.insertedId
-        setNotes((prevNotes) => [...prevNotes, newNote]); // Use the functional form of setNotes
+        setNotes((prevNotes) => [newNote, ...prevNotes]); // Use the functional form of setNotes
         setNoteTitle('');
       } else {
         console.error('Error saving note:', response.status);
