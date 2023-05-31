@@ -56,6 +56,15 @@ const NoteItem = styled.li`
   overflow-y: auto;
   width: 400px;
   word-wrap: break-word;
+
+  .note-timestamp {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    margin: 0.5rem;
+    font-size: 0.8rem;
+    color: #888;
+  }
 `;
 
 const Content = styled.div`
@@ -80,6 +89,7 @@ interface Note {
   _id?: number;
   title: string;
   content: string;
+  createdAt: string;
 }
 
 export default function NoteList() {
@@ -104,6 +114,7 @@ export default function NoteList() {
     const newNote: Note = {
       title: noteTitle,
       content: '',
+      createdAt: new Date().toUTCString(), // Add the current timestamp
     };
   
     try {
@@ -176,6 +187,9 @@ export default function NoteList() {
               }}>
                 Delete
               </DeleteButton>
+              <p className="note-timestamp">
+                {note.createdAt}
+              </p> {/* Display the timestamp */}
             </NoteItem>
           ))}
         </ul>
