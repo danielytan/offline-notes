@@ -1,4 +1,5 @@
-import connectToDatabase from '../../api/mongo';
+import connectToDatabase from '../../utils/mongo';
+import { pusherServer } from '../../utils/pusher';
 import { ObjectId } from 'mongodb';
 
 export default async function handler(req, res) {
@@ -14,6 +15,9 @@ export default async function handler(req, res) {
       const result = await collection.deleteOne({ "_id": new ObjectId(id) });
 
       if (result.deletedCount === 1) {
+        // Trigger the 'note-deleted' event on the 'notes' channel
+        pusherServer.trigger('notes', 'note-deleted', { noteId });
+
         res.status(200).json({ message: 'Note deleted successfully' });
       } else {
         res.status(404).json({ error: 'Note not found' });

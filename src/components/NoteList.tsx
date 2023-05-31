@@ -1,5 +1,6 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import { Container, Heading, Button } from '../styles/styled';
+import { pusherClient } from '../utils/pusher'
 import styled from 'styled-components';
 import axios from 'axios';
 
@@ -98,6 +99,25 @@ export default function NoteList() {
 
   useEffect(() => {
     fetchNotes();
+  
+    const channel = pusherClient.subscribe('notes');
+  
+    if (channel) {
+      channel.bind('note-saved', (data: any) => {
+        // Update the notes state with the received data
+        fetchNotes();
+      });
+    
+      channel.bind('note-deleted', (data: any) => {
+        // Update the notes state with the received data
+        fetchNotes();
+      });
+    }
+
+    return () => {
+      // Unsubscribe from the channel when the component unmounts
+      pusherClient.unsubscribe('notes');
+    };
   }, []);
 
   const handleNoteTitleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {

@@ -1,4 +1,5 @@
-import connectToDatabase from '../../api/mongo';
+import connectToDatabase from '../../utils/mongo';
+import { pusherServer } from '../../utils/pusher';
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
@@ -11,6 +12,9 @@ export default async function handler(req, res) {
       // Save the note data to the database
       const collection = db.collection('notes');
       const savedNote = await collection.insertOne(noteData);
+
+      // Trigger the 'note-saved' event on the 'notes' channel
+      pusherServer.trigger('notes', 'note-saved', savedNote);
 
       res.status(200).json(savedNote);
     } catch (error) {
