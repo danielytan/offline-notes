@@ -12,7 +12,8 @@ export default async function handler(req, res) {
 
       // Delete the note from the database
       const collection = db.collection('notes');
-      const result = await collection.deleteOne({ "_id": new ObjectId(id) });
+      const noteId = new ObjectId(id)
+      const result = await collection.deleteOne({ "_id": noteId });
 
       if (result.deletedCount === 1) {
         // Trigger the 'note-deleted' event on the 'notes' channel
