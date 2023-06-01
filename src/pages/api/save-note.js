@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
       // Trigger the 'note-saved' event on the 'notes' channel
       const pusherServer = getPusherServer();
-      pusherServer.trigger('notes', 'note-saved', savedNote);
+      pusherServer.trigger('notes', 'note-saved', noteData);
 
       res.status(200).json(savedNote);
     } catch (error) {
