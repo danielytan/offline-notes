@@ -160,6 +160,20 @@ export default function NoteList() {
 
     try {
       const response = await axios.get('/api/notes');
+  
+      // Convert headers object to an array of key-value pairs
+      const headersArray = Object.entries(response.headers);
+  
+      // Cache the response
+      caches.open('api-cache').then((cache) => {
+        const clonedResponse = new Response(JSON.stringify(response.data), {
+          status: response.status,
+          statusText: response.statusText,
+          headers: headersArray
+        });
+        cache.put('/api/notes', clonedResponse);
+      });
+  
       setNotes(response.data);
     } catch (error) {
       console.error('Error fetching notes:', error);

@@ -1,27 +1,31 @@
 self.addEventListener('fetch', (event) => {
-  // Intercept the fetch request
-  if (event.request.url.includes('/api/save-note')) {
-    event.respondWith(handleSaveNoteRequest(event.request));
+  const { request } = event;
+
+  // Check if the request is made to your API endpoint
+  if (request.url.startsWith('/api/')) {
+    event.respondWith(handleApiRequest(request));
   }
 });
 
-async function handleSaveNoteRequest(request) {
-  try {
-    // Extract the note data from the request body
-    const noteData = await request.clone().json();
+async function handleApiRequest(request) {
+  // Check if the network is available
+  if (navigator.onLine) {
+    // If online, forward the request to the server
+    return fetch(request);
+  } else {
+    // If offline, respond with cached data if available
+    const cache = await caches.open('api-cache');
+    const cachedResponse = await cache.match(request);
 
-    // Save the note data to the database using an API endpoint
-    const response = await fetch('/api/save-note', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(noteData),
-    });
-
-    // Return the response from the API endpoint
-    return response;
-  } catch (error) {
-    // Handle any errors
-    console.error('Error saving note:', error);
-    return new Response('Error saving note', { status: 500 });
+    if (cachedResponse) {
+      return cachedResponse;
+    } else {
+      // If no cached response available, respond with a placeholder response
+      // or handle the offline scenario as desired
+      return new Response(JSON.stringify({ error: 'Offline mode' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   }
 }
