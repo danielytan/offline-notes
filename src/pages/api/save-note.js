@@ -1,5 +1,5 @@
 import connectToDatabase from '../../utils/mongo';
-import { pusherServer } from '../../utils/pusher';
+import { getPusherServer } from '../../utils/pusher';
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
@@ -14,6 +14,7 @@ export default async function handler(req, res) {
       const savedNote = await collection.insertOne(noteData);
 
       // Trigger the 'note-saved' event on the 'notes' channel
+      const pusherServer = getPusherServer();
       pusherServer.trigger('notes', 'note-saved', savedNote);
 
       res.status(200).json(savedNote);
