@@ -103,11 +103,6 @@ export default function NoteList() {
     const channel = pusherClient?.subscribe('notes');
 
     if (channel) {
-      channel.bind('pusher:subscription_succeeded', () => {
-        // Subscription succeeded, fetch the initial notes again
-        fetchNotes();
-      });
-
       channel.bind('note-saved', (data: any) => {
         const savedNote = data; // Assuming the event payload contains the saved note data
         setNotes((prevNotes) => {
@@ -131,6 +126,8 @@ export default function NoteList() {
     const uniqueNotes = notes.reduce((uniqueList: Note[], note: Note) => {
       if (!uniqueList.some((uniqueNote) => uniqueNote._id === note._id)) {
         uniqueList.push(note);
+      } else {
+        console.log('Duplicate note found:', note);
       }
       return uniqueList;
     }, []);
@@ -176,8 +173,6 @@ export default function NoteList() {
   
       if (response.ok) {
         const savedNote = await response.json();
-        newNote._id = savedNote.insertedId
-        setNotes((prevNotes) => [newNote, ...prevNotes]); // Use the functional form of setNotes
         setNoteTitle('');
       } else {
         console.error('Error saving note:', response.status);
@@ -191,10 +186,6 @@ export default function NoteList() {
     try {
       // Make a DELETE request to the API endpoint
       await axios.delete(`/api/delete-note?id=${noteId}`);
-  
-      // Update the state with the filtered notes
-      const updatedNotes = notes.filter((note) => note._id !== noteId);
-      setNotes(updatedNotes);
     } catch (error) {
       console.error('Error deleting note:', error);
     }
