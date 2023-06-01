@@ -105,12 +105,12 @@ export default function NoteList() {
     if (channel) {
       channel.bind('note-saved', (data: any) => {
         // Update the notes state with the received data
-        fetchNotes();
+        setNotes((prevNotes) => [...prevNotes]);
       });
     
       channel.bind('note-deleted', (data: any) => {
         // Update the notes state with the received data
-        fetchNotes();
+        setNotes((prevNotes) => [...prevNotes]);
       });
     }
 
