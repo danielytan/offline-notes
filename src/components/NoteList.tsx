@@ -100,7 +100,7 @@ export default function NoteList() {
   useEffect(() => {
     fetchNotes();
   
-    const channel = pusherClient.subscribe('notes');
+    const channel = pusherClient?.subscribe('notes');
   
     if (channel) {
       channel.bind('note-saved', (data: any) => {
@@ -116,7 +116,7 @@ export default function NoteList() {
 
     return () => {
       // Unsubscribe from the channel when the component unmounts
-      pusherClient.unsubscribe('notes');
+      pusherClient?.unsubscribe('notes');
     };
   }, []);
 
