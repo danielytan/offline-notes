@@ -99,26 +99,53 @@ export default function NoteList() {
 
   useEffect(() => {
     fetchNotes();
-  
+
     const channel = pusherClient?.subscribe('notes');
-  
+
     if (channel) {
-      channel.bind('note-saved', (data: any) => {
-        // Update the notes state with the received data
+      channel.bind('pusher:subscription_succeeded', () => {
+        // Subscription succeeded, fetch the initial notes again
         fetchNotes();
       });
-    
+
+      channel.bind('note-saved', (data: any) => {
+        const savedNote = data; // Assuming the event payload contains the saved note data
+        setNotes((prevNotes) => {
+          const updatedNotes = [savedNote, ...prevNotes];
+          return removeDuplicates(updatedNotes);
+        });
+      });
+
       channel.bind('note-deleted', (data: any) => {
-        // Update the notes state with the received data
-        fetchNotes();
+        const deletedNoteId = data; // Assuming the event payload contains the ID of the deleted note
+        setNotes((prevNotes) => prevNotes.filter((note) => note._id !== deletedNoteId));
       });
     }
 
     return () => {
-      // Unsubscribe from the channel when the component unmounts
       pusherClient?.unsubscribe('notes');
     };
   }, []);
+
+  const removeDuplicates = (notes: Note[]) => {
+    const uniqueNotes = notes.reduce((uniqueList: Note[], note: Note) => {
+      if (!uniqueList.some((uniqueNote) => uniqueNote._id === note._id)) {
+        uniqueList.push(note);
+      }
+      return uniqueList;
+    }, []);
+    return uniqueNotes;
+  };
+
+  const fetchNotes = async () => {
+    try {
+      const response = await axios.get('/api/notes');
+      const allNotes = response.data;
+      setNotes(allNotes);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
 
   const handleNoteTitleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setNoteTitle(event.target.value);
@@ -170,16 +197,6 @@ export default function NoteList() {
       setNotes(updatedNotes);
     } catch (error) {
       console.error('Error deleting note:', error);
-    }
-  };
-
-  const fetchNotes = async () => {
-    try {
-      const response = await axios.get('/api/notes');
-      const allNotes = response.data;
-      setNotes(allNotes);
-    } catch (error) {
-      console.error('Error fetching notes:', error);
     }
   };
 
