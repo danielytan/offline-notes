@@ -1,8 +1,25 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import { Container, Heading, Button } from '../styles/styled';
 import { pusherClient } from '../utils/pusher'
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import axios from 'axios';
+
+const spinAnimation = keyframes`
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ccc;
+  border-top-color: #555;
+  border-radius: 50%;
+  margin-top: 40px; /* Add some margin-top to move the spinner lower */
+  animation: ${spinAnimation} 1s linear infinite;
+`;
 
 const NotesContainer = styled(Container)`
   display: flex;
@@ -96,6 +113,7 @@ interface Note {
 export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [noteTitle, setNoteTitle] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchNotes();
@@ -135,12 +153,18 @@ export default function NoteList() {
   };
 
   const fetchNotes = async () => {
+    setLoading(true);
+
+    // Simulate a longer loading time (e.g., 2 seconds)
+    // await new Promise((resolve) => setTimeout(resolve, 2000));
+
     try {
       const response = await axios.get('/api/notes');
-      const allNotes = response.data;
-      setNotes(allNotes);
+      setNotes(response.data);
     } catch (error) {
       console.error('Error fetching notes:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -204,23 +228,29 @@ export default function NoteList() {
           />
           <AddNoteButton type="submit">Add Note</AddNoteButton>
         </NoteForm>
-        <ul>
-          {notes.map((note, index) => (
-            <NoteItem key={index}>
-              <Content>{note.title}</Content>
-              <DeleteButton onClick={() => {
-                if (note._id !== undefined) {
-                  handleNoteDelete(note._id)
-                }
-              }}>
-                Delete
-              </DeleteButton>
-              <p className="note-timestamp">
-                {note.createdAt}
-              </p> {/* Display the timestamp */}
-            </NoteItem>
-          ))}
-        </ul>
+        <div>
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <ul>
+            {notes.map((note, index) => (
+              <NoteItem key={index}>
+                <Content>{note.title}</Content>
+                <DeleteButton onClick={() => {
+                  if (note._id !== undefined) {
+                    handleNoteDelete(note._id)
+                  }
+                }}>
+                  Delete
+                </DeleteButton>
+                <p className="note-timestamp">
+                  {note.createdAt}
+                </p> {/* Display the timestamp */}
+              </NoteItem>
+            ))}
+          </ul>
+          )}
+        </div>
       </NoteListWrapper>
     </NotesContainer>
   );
