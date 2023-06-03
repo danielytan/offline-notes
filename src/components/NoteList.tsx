@@ -2,6 +2,7 @@ import { useEffect, useState, ChangeEvent } from 'react';
 import { Container, Heading, Button } from '../styles/styled';
 import { pusherClient } from '../utils/pusher'
 import NoteForm from './NoteForm';
+import NoteItem from './NoteItem';
 import LoadingSpinner from './LoadingSpinner';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios';
@@ -18,49 +19,6 @@ const NoteListWrapper = styled.div`
   align-items: center;
   width: 90%; /* Adjust the width to a percentage value */
   margin: auto; /* Add margin: auto to center the wrapper */
-`;
-
-const NoteItem = styled.li`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  max-height: 150px;
-  overflow-y: auto;
-  width: 400px;
-  word-wrap: break-word;
-
-  .note-timestamp {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    margin: 0.5rem;
-    font-size: 0.8rem;
-    color: #888;
-  }
-`;
-
-const Content = styled.div`
-  flex-grow: 1;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-y: auto;
-  max-width: 100%;
-  padding-bottom: 1rem; /* Add padding to shift the text above the delete button */
-`;
-
-const DeleteButton = styled(Button)`
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  margin: 0.5rem;
-  z-index: 1;
 `;
 
 interface Note {
@@ -186,22 +144,10 @@ export default function NoteList() {
             <LoadingSpinner />
           ) : (
             <ul>
-            {notes.map((note, index) => (
-              <NoteItem key={index}>
-                <Content>{note.title}</Content>
-                <DeleteButton onClick={() => {
-                  if (note._id !== undefined) {
-                    handleNoteDelete(note._id)
-                  }
-                }}>
-                  Delete
-                </DeleteButton>
-                <p className="note-timestamp">
-                  {note.createdAt}
-                </p> {/* Display the timestamp */}
-              </NoteItem>
-            ))}
-          </ul>
+              {notes.map((note, index) => (
+                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} />
+              ))}
+            </ul>
           )}
         </div>
       </NoteListWrapper>
