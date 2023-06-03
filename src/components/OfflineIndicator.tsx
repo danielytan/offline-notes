@@ -3,9 +3,8 @@ import styled from 'styled-components';
 
 const OfflineContainer = styled.div`
   position: fixed;
-  bottom: 20px;
-  left: 20px;
-  margin: 0.5rem;
+  bottom: 10px;
+  left: 10px;
   display: flex;
   align-items: center;
 `;
