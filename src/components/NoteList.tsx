@@ -1,25 +1,9 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import { Container, Heading, Button } from '../styles/styled';
 import { pusherClient } from '../utils/pusher'
+import LoadingSpinner from './LoadingSpinner';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios';
-
-const spinAnimation = keyframes`
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-const LoadingSpinner = styled.div`
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 2px solid #ccc;
-  border-top-color: #555;
-  border-radius: 50%;
-  margin-top: 40px; /* Add some margin-top to move the spinner lower */
-  animation: ${spinAnimation} 1s linear infinite;
-`;
 
 const NotesContainer = styled(Container)`
   display: flex;
