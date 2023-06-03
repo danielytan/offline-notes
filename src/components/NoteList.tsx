@@ -1,11 +1,13 @@
-import { useEffect, useState, ChangeEvent } from 'react';
-import { Container, Heading, Button } from '../styles/styled';
+import { useEffect, useState } from 'react';
+import { Container, Heading } from '../styles/styled';
 import { pusherClient } from '../utils/pusher'
+import styled from 'styled-components';
+import axios from 'axios';
+
 import NoteForm from './NoteForm';
 import NoteItem from './NoteItem';
 import LoadingSpinner from './LoadingSpinner';
-import styled, { keyframes } from 'styled-components';
-import axios from 'axios';
+import OfflineIndicator from './OfflineIndicator';
 
 const NotesContainer = styled(Container)`
   display: flex;
@@ -151,6 +153,7 @@ export default function NoteList() {
           )}
         </div>
       </NoteListWrapper>
+      <OfflineIndicator />
     </NotesContainer>
   );
 }
