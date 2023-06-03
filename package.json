@@ -28,7 +28,8 @@
     "react-dom": "18.2.0",
     "styled-components": "^5.3.11",
     "tailwindcss": "3.3.2",
-    "typescript": "5.0.4"
+    "typescript": "5.0.4",
+    "workbox-cdn": "^5.1.4"
   },
   "devDependencies": {
     "@types/next-pwa": "^5.6.4",
