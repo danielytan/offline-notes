@@ -1,6 +1,7 @@
 import { useEffect, useState, ChangeEvent } from 'react';
 import { Container, Heading, Button } from '../styles/styled';
 import { pusherClient } from '../utils/pusher'
+import NoteForm from './NoteForm';
 import LoadingSpinner from './LoadingSpinner';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios';
@@ -17,31 +18,6 @@ const NoteListWrapper = styled.div`
   align-items: center;
   width: 90%; /* Adjust the width to a percentage value */
   margin: auto; /* Add margin: auto to center the wrapper */
-`;
-
-
-const NoteForm = styled.form`
-  display: flex;
-  align-items: stretch;
-  align-self: center; /* Center the form horizontally */
-`;
-
-const NoteInput = styled.textarea`
-  height: 100px;
-  width: 100%;
-  resize: vertical;
-  margin-right: 1rem;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-  flex-grow: 1;
-`;
-
-const AddNoteButton = styled(Button)`
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 1rem;
 `;
 
 const NoteItem = styled.li`
@@ -96,7 +72,6 @@ interface Note {
 
 export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [noteTitle, setNoteTitle] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -166,17 +141,7 @@ export default function NoteList() {
     }
   };
 
-  const handleNoteTitleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    setNoteTitle(event.target.value);
-  };
-
-  const handleNoteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Prevent the default form submission behavior
-  
-    if (noteTitle.trim() === '') {
-      return; // Don't add empty notes
-    }
-  
+  const handleNoteSubmit = async (noteTitle: string) => {    
     const newNote: Note = {
       title: noteTitle,
       content: '',
@@ -194,8 +159,6 @@ export default function NoteList() {
       });
   
       if (response.ok) {
-        const savedNote = await response.json();
-        setNoteTitle('');
       } else {
         console.error('Error saving note:', response.status);
       }
@@ -217,15 +180,7 @@ export default function NoteList() {
     <NotesContainer>
       <Heading>Notes</Heading>
       <NoteListWrapper>
-        <NoteForm onSubmit={handleNoteSubmit}>
-          <NoteInput
-            rows={3}
-            value={noteTitle}
-            onChange={handleNoteTitleChange}
-            placeholder="Enter your note..."
-          />
-          <AddNoteButton type="submit">Add Note</AddNoteButton>
-        </NoteForm>
+        <NoteForm onNoteSubmit={handleNoteSubmit} />
         <div>
           {loading ? (
             <LoadingSpinner />
