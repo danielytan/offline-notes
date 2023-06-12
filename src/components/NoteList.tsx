@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Container, Heading } from '../styles/styled';
 import { pusherClient } from '../utils/pusher'
+import { storeOfflineRequest } from '../../public/indexeddb';
+
 import styled from 'styled-components';
 import axios from 'axios';
 
@@ -34,8 +36,66 @@ export default function NoteList() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const handleNoteSubmit = useCallback(async (noteTitle: string) => {
+    const newNote: Note = {
+      title: noteTitle,
+      content: '',
+      createdAt: new Date().toUTCString(), // Add the current timestamp
+    };
+
+    // Send a POST request to the save-note endpoint
+    sendNoteToServer(newNote);
+  }, []);
+
+  const handleNoteDelete = useCallback(async (noteId: number) => {
+    try {
+      // Make a DELETE request to the API endpoint
+      await axios.delete(`/api/delete-note?id=${noteId}`);
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  }, []);
+
+  const handleSync = useCallback(async () => {
+    const notes = await getQueuedNotes();
+
+    for (const note of notes) {
+      try {
+        await handleNoteSubmit(note);
+      } catch (error) {
+        console.error('Error syncing note:', error);
+        // Handle the error gracefully, such as logging or displaying a notification
+      }
+    }
+
+    await clearQueuedNotes();
+  }, [handleNoteSubmit]);
+
   useEffect(() => {
     fetchNotes();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { type: 'module' })
+        .then((registration) => {
+          console.log('Service Worker registered:', registration);
+  
+          // Listen for the "online" event to trigger sync
+          window.addEventListener('online', () => {
+            handleSync();
+          });
+        })
+        .catch((error) => {
+          console.error('Service Worker registration failed:', error);
+        });
+      
+      navigator.serviceWorker.ready.then((registration) => {
+        // Register the 'sync-notes' event
+        return registration.sync.register('sync-notes');
+      })
+      .catch((error) => {
+        console.log('Service Worker registration failed:', error);
+      });
+    }
 
     const channel = pusherClient?.subscribe('notes');
 
@@ -57,7 +117,7 @@ export default function NoteList() {
     return () => {
       pusherClient?.unsubscribe('notes');
     };
-  }, []);
+  }, [handleNoteSubmit, handleSync]);
 
   const removeDuplicates = (notes: Note[]) => {
     const uniqueNotes = notes.reduce((uniqueList: Note[], note: Note) => {
@@ -101,40 +161,48 @@ export default function NoteList() {
     }
   };
 
-  const handleNoteSubmit = async (noteTitle: string) => {    
-    const newNote: Note = {
-      title: noteTitle,
-      content: '',
-      createdAt: new Date().toUTCString(), // Add the current timestamp
+  async function sendNoteToServer(note: Note) {
+    const request = {
+      url: '/api/save-note',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(note),
     };
-  
-    try {
-      // Send a POST request to the save-note endpoint
-      const response = await fetch('/api/save-note', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newNote),
-      });
-  
-      if (response.ok) {
-      } else {
-        console.error('Error saving note:', response.status);
-      }
-    } catch (error) {
-      console.error('Error saving note:', error);
-    }
-  };
 
-  const handleNoteDelete = async (noteId: number) => {
-    try {
-      // Make a DELETE request to the API endpoint
-      await axios.delete(`/api/delete-note?id=${noteId}`);
-    } catch (error) {
-      console.error('Error deleting note:', error);
+    // Check if the browser is online
+    if (navigator.onLine) {
+      try {
+        const response = await fetch('/api/save-note', request);
+        console.log(response)
+        if (response.ok) {
+          console.log('Note submitted successfully');
+        } else {
+          console.error('Failed to submit note');
+        }
+      } catch (error) {
+        console.error('Failed to submit note:', error);
+      }
+    } else {
+      // Browser is offline, store the request in IndexedDB
+      try {
+        await storeOfflineRequest(request);
+        console.log('Note stored offline for later sync');
+      } catch (error) {
+        console.error('Failed to store note offline:', error);
+      }
     }
-  };
+  }
+
+  async function clearQueuedNotes() {
+    localStorage.removeItem('offlineNotes');
+  }
+  
+  async function getQueuedNotes() {
+    const notes = JSON.parse(localStorage.getItem('offlineNotes') || '[]');
+    return notes;
+  }
 
   return (
     <NotesContainer>
