@@ -136,7 +136,7 @@ export default function NoteList() {
     // Simulate a longer loading time (e.g., 2 seconds)
     // await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    let allNotes = [];
+    let allNotes: Note[] = [];
     try {
       const response = await axios.get('/api/notes');
       allNotes = response.data;
@@ -149,8 +149,8 @@ export default function NoteList() {
     let offlineRequests = await getOfflineRequests();
     for (const request of offlineRequests) {
       const offlineNote = request.body;
-      if (!allNotes.some((note: Note) => note._id === offlineNote._id)) {
-        allNotes.push(offlineNote);
+      if (offlineNote._id !== undefined && !allNotes.some((note) => note._id === offlineNote._id)) {
+        allNotes.unshift(offlineNote);
       }
     }
 
