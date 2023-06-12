@@ -41,7 +41,8 @@ const Content = styled.div`
   word-break: break-word;
   overflow-y: auto;
   max-width: 100%;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.25rem;
 `;
 
 const DeleteButton = styled(Button)`
