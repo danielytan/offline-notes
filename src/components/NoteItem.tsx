@@ -1,8 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Button } from '../styles/styled';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
 
-const NoteItemWrapper = styled.li<{ isCached?: boolean }>`
+const NoteItemWrapper = styled.div`
+  margin-bottom: 1rem;
+`;
+
+const NoteFrame = styled.li<{ isCached?: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -11,12 +17,12 @@ const NoteItemWrapper = styled.li<{ isCached?: boolean }>`
   padding: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   max-height: 150px;
   overflow-y: auto;
-  width: 400px;
+  width: 500px;
   word-wrap: break-word;
-  background-color: ${props => props.isCached ? '#eee' : 'transparent'}; /* Set the background color to gray if isCached is true */
+  background-color: ${props => (props.isCached ? '#eee' : 'transparent')};
 
   .note-timestamp {
     position: absolute;
@@ -46,6 +52,27 @@ const DeleteButton = styled(Button)`
   z-index: 1;
 `;
 
+const OfflineIndicatorWrapper = styled.div`
+  display: flex;
+  align-items: right;
+  justify-content: right;
+  position: relative;
+  bottom: 0;
+  right: 0;
+  font-size: 0.75rem; /* Adjust the font size to make the icon smaller */
+  color: #fff;
+`;
+
+const OfflineIndicatorIcon = styled(FontAwesomeIcon)`
+  color: red;
+  margin-right: 0.25rem;
+`;
+
+const OfflineIndicatorText = styled.span`
+  font-size: 0.8rem;
+  color: red;
+`;
+
 interface NoteItemProps {
   note: {
     _id?: number;
@@ -64,10 +91,18 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote }) => {
   };
 
   return (
-    <NoteItemWrapper isCached={note.isCached}>
-      <Content>{note.title}</Content>
-      <DeleteButton onClick={handleDelete}>Delete</DeleteButton>
-      <p className="note-timestamp">{note.createdAt}</p>
+    <NoteItemWrapper>
+      <NoteFrame isCached={note.isCached}>
+        <Content>{note.title}</Content>
+        <DeleteButton onClick={handleDelete}>Delete</DeleteButton>
+        <p className="note-timestamp">{note.createdAt}</p>
+      </NoteFrame>
+      {note.isCached && (
+        <OfflineIndicatorWrapper>
+          <OfflineIndicatorIcon icon={faExclamationCircle} />
+          <OfflineIndicatorText>Note not synced</OfflineIndicatorText>
+        </OfflineIndicatorWrapper>
+      )}
     </NoteItemWrapper>
   );
 };
