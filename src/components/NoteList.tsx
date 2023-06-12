@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Container, Heading } from '../styles/styled';
 import { pusherClient } from '../utils/pusher'
-import { storeOfflineRequest } from '../../public/indexeddb';
+import { storeOfflineRequest, getOfflineRequests } from '../../public/indexeddb';
 
 import styled from 'styled-components';
 import axios from 'axios';
@@ -28,8 +28,8 @@ const NoteListWrapper = styled.div`
 interface Note {
   _id?: number;
   title: string;
-  content: string;
   createdAt: string;
+  isCached?: boolean; // Add the isCached property to indicate if the note is locally cached
 }
 
 export default function NoteList() {
@@ -39,7 +39,6 @@ export default function NoteList() {
   const handleNoteSubmit = useCallback(async (noteTitle: string) => {
     const newNote: Note = {
       title: noteTitle,
-      content: '',
       createdAt: new Date().toUTCString(), // Add the current timestamp
     };
 
@@ -137,44 +136,44 @@ export default function NoteList() {
     // Simulate a longer loading time (e.g., 2 seconds)
     // await new Promise((resolve) => setTimeout(resolve, 2000));
 
+    let allNotes = [];
     try {
       const response = await axios.get('/api/notes');
-  
-      // Convert headers object to an array of key-value pairs
-      const headersArray = Object.entries(response.headers);
-  
-      // Cache the response
-      caches.open('api-cache').then((cache) => {
-        const clonedResponse = new Response(JSON.stringify(response.data), {
-          status: response.status,
-          statusText: response.statusText,
-          headers: headersArray
-        });
-        cache.put('/api/notes', clonedResponse);
-      });
-  
-      setNotes(response.data);
+      allNotes = response.data;
     } catch (error) {
       console.error('Error fetching notes:', error);
     } finally {
       setLoading(false);
     }
+  
+    let offlineRequests = await getOfflineRequests();
+    for (const request of offlineRequests) {
+      const offlineNote = request.body;
+      if (!allNotes.some((note: Note) => note._id === offlineNote._id)) {
+        allNotes.push(offlineNote);
+      }
+    }
+
+    /*
+    notes.sort(function(x, y) {
+      return x.date - y.date;
+    })
+    */
+
+    setNotes(allNotes);
   };
 
   async function sendNoteToServer(note: Note) {
-    const request = {
-      url: '/api/save-note',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(note),
-    };
-
     // Check if the browser is online
     if (navigator.onLine) {
       try {
-        const response = await fetch('/api/save-note', request);
+        const response = await fetch('/api/save-note', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(note),
+        });
         console.log(response)
         if (response.ok) {
           console.log('Note submitted successfully');
@@ -187,7 +186,19 @@ export default function NoteList() {
     } else {
       // Browser is offline, store the request in IndexedDB
       try {
-        await storeOfflineRequest(request);
+        await storeOfflineRequest({
+          url: '/api/save-note',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(note),
+        });
+        note.isCached = true
+        setNotes((prevNotes) => {
+          const updatedNotes = [note, ...prevNotes];
+          return updatedNotes;
+        });
         console.log('Note stored offline for later sync');
       } catch (error) {
         console.error('Failed to store note offline:', error);

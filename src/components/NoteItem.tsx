@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { Button } from '../styles/styled';
 
-const NoteItemWrapper = styled.li`
+const NoteItemWrapper = styled.li<{ isCached?: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -16,6 +16,7 @@ const NoteItemWrapper = styled.li`
   overflow-y: auto;
   width: 400px;
   word-wrap: break-word;
+  background-color: ${props => props.isCached ? '#eee' : 'transparent'}; /* Set the background color to gray if isCached is true */
 
   .note-timestamp {
     position: absolute;
@@ -50,6 +51,7 @@ interface NoteItemProps {
     _id?: number;
     title: string;
     createdAt: string;
+    isCached?: boolean;
   };
   onDeleteNote: (noteId: number) => void;
 }
@@ -62,7 +64,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote }) => {
   };
 
   return (
-    <NoteItemWrapper>
+    <NoteItemWrapper isCached={note.isCached}>
       <Content>{note.title}</Content>
       <DeleteButton onClick={handleDelete}>Delete</DeleteButton>
       <p className="note-timestamp">{note.createdAt}</p>
