@@ -49,7 +49,7 @@ const NoteFrame = styled.li<{ isCached?: boolean }>`
     word-break: break-word;
     overflow-y: auto;
     max-width: 100%;
-    padding-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   textarea {
