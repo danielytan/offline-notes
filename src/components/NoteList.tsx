@@ -56,6 +56,14 @@ export default function NoteList() {
     }
   }, []);
 
+  const handleEditNote = (noteId: number, updatedTitle: string) => {
+    setServerNotes((prevNotes) =>
+      prevNotes.map((note) =>
+        note._id === noteId ? { ...note, title: updatedTitle } : note
+      )
+    );
+  };
+
   useEffect(() => {
     fetchNotes();
 
@@ -207,10 +215,10 @@ export default function NoteList() {
           ) : (
             <ul>
               {localNotes.map((note, index) => (
-                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} />
+                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} onEditNote={handleEditNote} />
               ))}
               {serverNotes.map((note, index) => (
-                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} />
+                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} onEditNote={handleEditNote} />
               ))}
             </ul>
           )}

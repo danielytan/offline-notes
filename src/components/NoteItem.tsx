@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Button } from '../styles/styled';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -32,6 +32,38 @@ const NoteFrame = styled.li<{ isCached?: boolean }>`
     font-size: 0.8rem;
     color: #888;
   }
+
+  .edit-buttons {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .note-content {
+    width: 95%;
+    flex-grow: 1;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-y: auto;
+    max-width: 100%;
+    padding-bottom: 1rem;
+  }
+
+  textarea {
+    width: 100%;
+    border: none;
+    resize: none;
+    overflow: hidden;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+    height: auto;
+    min-height: 0rem;
+  }
 `;
 
 const Content = styled.div`
@@ -45,12 +77,34 @@ const Content = styled.div`
   padding-bottom: 0.25rem;
 `;
 
-const DeleteButton = styled(Button)`
+const SaveButton = styled(Button)`
+  padding: 5px 10px;
+  font-size: 0.8rem;
+`;
+
+const CancelButton = styled(Button)`
+  padding: 5px 10px;
+  font-size: 0.8rem;
+`;
+
+const DeleteButton = styled.button`
   position: absolute;
-  bottom: 0;
-  right: 0;
-  margin: 0.5rem;
-  z-index: 1;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 1rem;
+  cursor: pointer;
+`;
+
+const EditButton = styled(Button)`
+  position: absolute;
+  padding: 5px 10px;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
 `;
 
 const OfflineIndicatorWrapper = styled.div`
@@ -82,21 +136,68 @@ interface NoteItemProps {
     isCached?: boolean;
   };
   onDeleteNote: (noteId: number) => void;
+  onEditNote: (noteId: number, updatedTitle: string) => void;
 }
 
-const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote }) => {
+const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState(note.title);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const handleDelete = () => {
     if (note._id !== undefined) {
       onDeleteNote(note._id);
     }
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    if (note._id !== undefined) {
+      onEditNote(note._id, title);
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setTitle(note.title);
+  };
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [isEditing, title]);
+
   return (
     <NoteItemWrapper>
       <NoteFrame isCached={note.isCached}>
-        <Content>{note.title}</Content>
-        <DeleteButton onClick={handleDelete}>Delete</DeleteButton>
+        <DeleteButton onClick={handleDelete}>[x]</DeleteButton>
         <p className="note-timestamp">{note.createdAt}</p>
+        <div className="note-content">
+          {isEditing ? (
+            <textarea
+              ref={textareaRef}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              autoFocus
+            />
+          ) : (
+            <Content>{note.title}</Content>
+          )}
+        </div>
+        {isEditing ? (
+          <div className="edit-buttons">
+            <SaveButton onClick={handleSave}>Save</SaveButton>
+            <CancelButton onClick={handleCancel}>Cancel</CancelButton>
+          </div>
+        ) : (
+          <EditButton onClick={handleEdit}>Edit</EditButton>
+        )}
       </NoteFrame>
       {note.isCached && (
         <OfflineIndicatorWrapper>
