@@ -43,26 +43,6 @@ export default function NoteList() {
       createdAt: new Date().toUTCString(), // Add the current timestamp
     };
 
-    // Store the request in IndexedDB first
-    try {
-      await storeOfflineRequest({
-        url: '/api/save-note',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(note),
-      });
-      note.isCached = true
-      setLocalNotes((prevNotes) => {
-        const updatedNotes = [note, ...prevNotes];
-        return updatedNotes;
-      });
-      console.log('Note stored offline for later sync');
-    } catch (error) {
-      console.error('Failed to store note offline:', error);
-    }
-
     // Check if the browser is online
     if (navigator.onLine) {
       // Send a POST request to the save-note endpoint
@@ -85,15 +65,47 @@ export default function NoteList() {
         note.isCached = true
         console.error('Failed to submit note:', error);
       }
+    } else {
+      // Store the request in IndexedDB first
+      try {
+        await storeOfflineRequest({
+          url: '/api/save-note',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(note),
+        });
+        note.isCached = true
+        setLocalNotes((prevNotes) => {
+          const updatedNotes = [note, ...prevNotes];
+          return updatedNotes;
+        });
+        console.log('Note stored offline for later sync');
+      } catch (error) {
+        console.error('Failed to store note offline:', error);
+      }
     }
   }, []);
 
   const handleNoteDelete = useCallback(async (noteId: number) => {
+    // Delete the request from IndexedDB first
     try {
-      // Make a DELETE request to the API endpoint
-      await axios.delete(`/api/delete-note?id=${noteId}`);
+      await deleteOfflineRequest(noteId);
+      fetchLocalNotes();
+      console.log('Note deleted from offline database');
     } catch (error) {
-      console.error('Error deleting note:', error);
+      console.error('Failed to delete note from offline database:', error);
+    }
+
+    // Check if the browser is online
+    if (navigator.onLine) {
+      // Make a DELETE request to the API endpoint
+      try {
+        await axios.delete(`/api/delete-note?id=${noteId}`);
+      } catch (error) {
+        console.error('Error deleting note:', error);
+      }
     }
   }, []);
 
