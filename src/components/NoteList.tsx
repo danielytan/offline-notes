@@ -56,13 +56,15 @@ export default function NoteList() {
     }
   }, []);
 
-  const handleEditNote = (noteId: number, updatedTitle: string) => {
-    setServerNotes((prevNotes) =>
-      prevNotes.map((note) =>
-        note._id === noteId ? { ...note, title: updatedTitle } : note
-      )
-    );
-  };
+  const handleEditNote = useCallback(async (noteId: number, updatedTitle: string) => {
+    if (navigator.onLine) {
+      try {
+        await axios.put(`/api/edit-note?id=${noteId}`, { title: updatedTitle });
+      } catch (error) {
+        console.error('Failed to edit note:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchNotes();
@@ -102,6 +104,17 @@ export default function NoteList() {
         fetchLocalNotes();
       });
 
+      channel.bind('note-updated', (data: any) => {
+        setServerNotes((prevNotes) =>
+          prevNotes.map((note) => {
+            if (note._id === data._id) {
+              note.title = data.title;
+            }
+            return note;
+          })
+        );
+      });
+      
       channel.bind('note-deleted', (data: any) => {
         const deletedNoteId = data; // Assuming the event payload contains the ID of the deleted note
         setServerNotes((prevNotes) => prevNotes.filter((note) => note._id !== deletedNoteId));

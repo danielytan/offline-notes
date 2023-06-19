@@ -32,7 +32,9 @@ async function handlePostRequest(request) {
       return await fetch(request);
     }
   } catch (error) {
-    await storeOfflineRequest(request);
+    if (request.url === '/api/save-note') {
+      await storeOfflineRequest(request);
+    }
     throw error;
   }
 }
