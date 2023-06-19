@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Button } from '../styles/styled';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
+import { faSync } from '@fortawesome/free-solid-svg-icons';
 
 const NoteItemWrapper = styled.div`
   margin-bottom: 1rem;
@@ -22,6 +23,7 @@ const NoteFrame = styled.li<{ isCached?: boolean }>`
   overflow-y: auto;
   width: 500px;
   word-wrap: break-word;
+  overflow: visible;
   background-color: ${props => (props.isCached ? '#eee' : 'transparent')};
 
   .note-timestamp {
@@ -107,6 +109,21 @@ const EditButton = styled(Button)`
   cursor: pointer;
 `;
 
+const SyncIndicator = styled.div`
+  position: absolute;
+  top: 50%;
+  right: -36px;
+  transform: translate(0, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #888;
+  color: #fff;
+`;
+
 const OfflineIndicatorWrapper = styled.div`
   display: flex;
   align-items: right;
@@ -135,18 +152,30 @@ interface NoteItemProps {
     createdAt: string;
     isCached?: boolean;
   };
-  onDeleteNote: (noteId: number) => void;
-  onEditNote: (noteId: number, updatedTitle: string) => void;
+  onDeleteNote: (noteId: number) => Promise<void>;
+  onEditNote: (noteId: number, updatedTitle: string) => Promise<void>;
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) => {
+  const [isSyncing, setSyncing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(note.title);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleDelete = () => {
-    if (note._id !== undefined) {
-      onDeleteNote(note._id);
+  const handleDelete = async () => {
+    // Set syncing state to true before making the request
+    setSyncing(true);
+
+    try {
+      // Make the delete request to the server
+      if (note._id !== undefined) {
+        await onDeleteNote(note._id);
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    } finally {
+      // Set syncing state back to false after the request is complete
+      setSyncing(false);
     }
   };
 
@@ -154,9 +183,11 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (note._id !== undefined) {
-      onEditNote(note._id, title);
+      setSyncing(true);
+      await onEditNote(note._id, title);
+      setSyncing(false);
       setIsEditing(false);
     }
   };
@@ -176,6 +207,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
   return (
     <NoteItemWrapper>
       <NoteFrame isCached={note.isCached}>
+        {isSyncing && <SyncIndicator><FontAwesomeIcon icon={faSync} spin /></SyncIndicator>}
         <DeleteButton onClick={handleDelete}>[x]</DeleteButton>
         <p className="note-timestamp">{note.createdAt}</p>
         <div className="note-content">

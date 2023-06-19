@@ -38,13 +38,54 @@ export default function NoteList() {
   const [loading, setLoading] = useState(false);
 
   const handleNoteSubmit = useCallback(async (noteTitle: string) => {
-    const newNote: Note = {
+    const note: Note = {
       title: noteTitle,
       createdAt: new Date().toUTCString(), // Add the current timestamp
     };
 
-    // Send a POST request to the save-note endpoint
-    sendNoteToServer(newNote);
+    // Store the request in IndexedDB first
+    try {
+      await storeOfflineRequest({
+        url: '/api/save-note',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(note),
+      });
+      note.isCached = true
+      setLocalNotes((prevNotes) => {
+        const updatedNotes = [note, ...prevNotes];
+        return updatedNotes;
+      });
+      console.log('Note stored offline for later sync');
+    } catch (error) {
+      console.error('Failed to store note offline:', error);
+    }
+
+    // Check if the browser is online
+    if (navigator.onLine) {
+      // Send a POST request to the save-note endpoint
+      try {
+        note.isCached = false
+        const response = await fetch('/api/save-note', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(note),
+        });
+        if (response.ok) {
+          console.log('Note submitted successfully');
+        } else {
+          note.isCached = true
+          console.error('Failed to submit note');
+        }
+      } catch (error) {
+        note.isCached = true
+        console.error('Failed to submit note:', error);
+      }
+    }
   }, []);
 
   const handleNoteDelete = useCallback(async (noteId: number) => {
@@ -173,49 +214,6 @@ export default function NoteList() {
     })
     */
   };
-
-  async function sendNoteToServer(note: Note) {
-    // Check if the browser is online
-    if (navigator.onLine) {
-      try {
-        const response = await fetch('/api/save-note', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(note),
-        });
-        console.log(response)
-        if (response.ok) {
-          console.log('Note submitted successfully');
-        } else {
-          console.error('Failed to submit note');
-        }
-      } catch (error) {
-        console.error('Failed to submit note:', error);
-      }
-    } else {
-      // Browser is offline, store the request in IndexedDB
-      try {
-        await storeOfflineRequest({
-          url: '/api/save-note',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(note),
-        });
-        note.isCached = true
-        setLocalNotes((prevNotes) => {
-          const updatedNotes = [note, ...prevNotes];
-          return updatedNotes;
-        });
-        console.log('Note stored offline for later sync');
-      } catch (error) {
-        console.error('Failed to store note offline:', error);
-      }
-    }
-  }
 
   return (
     <NotesContainer>
