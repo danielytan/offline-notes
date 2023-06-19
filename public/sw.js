@@ -2,25 +2,50 @@ import { storeOfflineRequest, getOfflineRequests, deleteOfflineRequest } from '.
 
 console.log('Service Worker file loaded');
 
+const CACHE_NAME = 'offline-notes-cache-v1';
+
 self.addEventListener('install', (event) => {
-  console.log("INSTALLING")
+  console.log('Service Worker installed');
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(['/']);
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  console.log("ACTIVATING")
+  console.log('Service Worker activated');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
 });
 
 self.addEventListener('fetch', (event) => {
-  console.log("FETCHING")
+  console.log('Fetching:', event.request.url);
   if (event.request.method === 'POST') {
     event.respondWith(handlePostRequest(event.request));
   } else {
-    event.respondWith(fetch(event.request));
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        if (response) {
+          return response; // Return the cached response if available
+        }
+        return fetch(event.request); // Fetch the request from the network
+      })
+    );
   }
 });
 
 self.addEventListener('sync', (event) => {
-  console.log("SYNCING", event.tag)
+  console.log('Syncing:', event.tag);
   if (event.tag === 'sync-notes') {
     event.waitUntil(syncNotes());
   }
@@ -46,7 +71,6 @@ async function syncNotes() {
 
   console.log('Offline requests:', offlineRequests);
 
-  console.log(offlineRequests)
   for (const request of offlineRequests) {
     console.log('Processing request:', request);
 
