@@ -1,9 +1,9 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import SyncIndicator from './SyncIndicator'
 import { Button } from '../styles/styled';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
-import { faSync } from '@fortawesome/free-solid-svg-icons';
 
 const NoteItemWrapper = styled.div`
   margin-bottom: 1rem;
@@ -109,21 +109,6 @@ const EditButton = styled(Button)`
   cursor: pointer;
 `;
 
-const SyncIndicator = styled.div`
-  position: absolute;
-  top: 50%;
-  right: -36px;
-  transform: translate(0, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: #888;
-  color: #fff;
-`;
-
 const OfflineIndicatorWrapper = styled.div`
   display: flex;
   align-items: right;
@@ -207,7 +192,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
   return (
     <NoteItemWrapper>
       <NoteFrame isCached={note.isCached}>
-        {isSyncing && <SyncIndicator><FontAwesomeIcon icon={faSync} spin /></SyncIndicator>}
+        {isSyncing && <SyncIndicator/>}
         <DeleteButton onClick={handleDelete}>[x]</DeleteButton>
         <p className="note-timestamp">{note.createdAt}</p>
         <div className="note-content">

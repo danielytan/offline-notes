@@ -27,22 +27,25 @@ const AddNoteButton = styled(Button)`
 `;
 
 interface NoteFormProps {
-  onNoteSubmit: (noteTitle: string) => void;
+  onNoteSubmit: (noteTitle: string) => Promise<void>;
 }
 
 const NoteForm: React.FC<NoteFormProps> = ({ onNoteSubmit }) => {
+  const [isSyncing, setSyncing] = useState(false);
   const [noteTitle, setNoteTitle] = useState('');
 
   const handleNoteTitleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setNoteTitle(event.target.value);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (noteTitle.trim() === '') {
       return;
     }
-    onNoteSubmit(noteTitle);
+    setSyncing(true)
+    await onNoteSubmit(noteTitle);
+    setSyncing(false)
     setNoteTitle('');
   };
 
