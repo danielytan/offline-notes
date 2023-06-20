@@ -93,15 +93,6 @@ export default function NoteList() {
   }, []);
 
   const handleNoteDelete = useCallback(async (noteId: number) => {
-    // Delete the request from IndexedDB first
-    try {
-      await deleteOfflineRequest(noteId);
-      fetchLocalNotes();
-      console.log('Note deleted from offline database');
-    } catch (error) {
-      console.error('Failed to delete note from offline database:', error);
-    }
-
     // Check if the browser is online
     if (navigator.onLine) {
       // Make a DELETE request to the API endpoint
@@ -109,6 +100,15 @@ export default function NoteList() {
         await axios.delete(`/api/delete-note?id=${noteId}`);
       } catch (error) {
         console.error('Error deleting note:', error);
+      }
+    } else {
+      // Delete the request from IndexedDB
+      try {
+        await deleteOfflineRequest(noteId);
+        fetchLocalNotes();
+        console.log('Note deleted from offline database');
+      } catch (error) {
+        console.error('Failed to delete note from offline database:', error);
       }
     }
   }, []);
@@ -119,6 +119,30 @@ export default function NoteList() {
         await axios.put(`/api/edit-note?id=${noteId}`, { title: updatedTitle });
       } catch (error) {
         console.error('Failed to edit note:', error);
+      }
+    } else {
+      // Store the request in IndexedDB first
+      try {
+        await storeOfflineRequest({
+          url: '/api/edit-note',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ title: updatedTitle }),
+        });
+        setServerNotes((prevNotes) =>
+          prevNotes.map((note) => {
+            if (note._id === noteId) {
+              note.title = updatedTitle;
+              note.isCached = true;
+            }
+            return note;
+          })
+        );
+        console.log('Note edited offline for later sync');
+      } catch (error) {
+        console.error('Failed to edit note offline:', error);
       }
     }
   }, []);

@@ -5,15 +5,18 @@ console.log('Service Worker file loaded');
 const CACHE_NAME = 'offline-notes-cache-v1';
 
 self.addEventListener('install', (event) => {
+  /*
   console.log('Service Worker installed');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(['/']);
     })
   );
+  */
 });
 
 self.addEventListener('activate', (event) => {
+  /*
   console.log('Service Worker activated');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -26,6 +29,7 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  */
 });
 
 self.addEventListener('fetch', (event) => {
@@ -35,9 +39,11 @@ self.addEventListener('fetch', (event) => {
   } else {
     event.respondWith(
       caches.match(event.request).then((response) => {
+        /*
         if (response) {
           return response; // Return the cached response if available
         }
+        */
         return fetch(event.request); // Fetch the request from the network
       })
     );
