@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Container, Heading } from '../styles/styled';
+import { SpinnerContainer } from './LoadingSpinner';
 import { pusherClient } from '../utils/pusher'
 import { storeOfflineRequest, getOfflineRequests, deleteOfflineRequest } from '../../public/indexeddb';
 
@@ -8,7 +9,6 @@ import axios from 'axios';
 
 import NoteForm from './NoteForm';
 import NoteItem from './NoteItem';
-import LoadingSpinner from './LoadingSpinner';
 import OfflineIndicator from './OfflineIndicator';
 
 const NotesContainer = styled(Container)`
@@ -23,6 +23,10 @@ const NoteListWrapper = styled.div`
   align-items: center;
   width: 90%; /* Adjust the width to a percentage value */
   margin: auto; /* Add margin: auto to center the wrapper */
+`;
+
+const NoteListLoadingSpinner = styled(SpinnerContainer)`
+  margin-top: 40px;
 `;
 
 interface Note {
@@ -119,6 +123,30 @@ export default function NoteList() {
     }
   }, []);
 
+  const fetchNotes = useCallback(async () => {
+    setLoading(true);
+
+    // Simulate a longer loading time (e.g., 2 seconds)
+    // await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    try {
+      const response = await axios.get('/api/notes');
+      setServerNotes(response.data);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    } finally {
+      setLoading(false);
+    }
+  
+    fetchLocalNotes();
+
+    /*
+    notes.sort(function(x, y) {
+      return x.date - y.date;
+    })
+    */
+  }, []);
+
   useEffect(() => {
     fetchNotes();
 
@@ -177,7 +205,7 @@ export default function NoteList() {
     return () => {
       pusherClient?.unsubscribe('notes');
     };
-  }, [handleNoteSubmit]);
+  }, [handleNoteSubmit, fetchNotes]);
 
   const removeDuplicates = (notes: Note[]) => {
     const uniqueNotes = notes.reduce((uniqueList: Note[], note: Note) => {
@@ -203,30 +231,6 @@ export default function NoteList() {
     setLocalNotes(newLocalNotes);
   };
 
-  const fetchNotes = async () => {
-    setLoading(true);
-
-    // Simulate a longer loading time (e.g., 2 seconds)
-    // await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    try {
-      const response = await axios.get('/api/notes');
-      setServerNotes(response.data);
-    } catch (error) {
-      console.error('Error fetching notes:', error);
-    } finally {
-      setLoading(false);
-    }
-  
-    fetchLocalNotes();
-
-    /*
-    notes.sort(function(x, y) {
-      return x.date - y.date;
-    })
-    */
-  };
-
   return (
     <NotesContainer>
       <Heading>Notes</Heading>
@@ -234,7 +238,7 @@ export default function NoteList() {
         <NoteForm onNoteSubmit={handleNoteSubmit} />
         <div>
           {loading ? (
-            <LoadingSpinner />
+            <NoteListLoadingSpinner />
           ) : (
             <ul>
               {localNotes.map((note, index) => (

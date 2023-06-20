@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent } from 'react';
 import styled from 'styled-components';
+import { LoadingSpinner } from './LoadingSpinner'
 import { Button } from '../styles/styled';
 
 const NoteFormContainer = styled.form`
@@ -57,7 +58,9 @@ const NoteForm: React.FC<NoteFormProps> = ({ onNoteSubmit }) => {
         onChange={handleNoteTitleChange}
         placeholder="Enter your note..."
       />
-      <AddNoteButton type="submit">Add Note</AddNoteButton>
+      <AddNoteButton type="submit">
+        {isSyncing ? <LoadingSpinner/> : "Add Note" }
+      </AddNoteButton>
     </NoteFormContainer>
   );
 };
