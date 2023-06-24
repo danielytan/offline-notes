@@ -10,6 +10,7 @@ export const openDB = () => {
       request.onupgradeneeded = (event) => {
         db = event.target.result;
         db.createObjectStore('requests', { keyPath: 'id', autoIncrement: true });
+        db.createObjectStore('local-notes', { keyPath: 'id', autoIncrement: true });
       };
 
       request.onsuccess = (event) => {
@@ -23,6 +24,101 @@ export const openDB = () => {
     }
   });
 };
+
+export const storeOfflineNote = async (note) => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('local-notes', 'readwrite');
+    const store = transaction.objectStore('local-notes');
+
+    const request = store.add(note, note.localId);
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+export const deleteOfflineNote = async (localId) => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('local-notes', 'readwrite');
+    const store = transaction.objectStore('local-notes');
+
+    const request = store.delete(id);
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+export const editOfflineNote = async (localId, updatedContent) => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('local-notes', 'readwrite');
+    const store = transaction.objectStore('local-notes');
+
+    const request = store.put(updatedContent, localId);
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+export const getOfflineNote = async (localId) => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('local-notes', 'readonly');
+    const store = transaction.objectStore('local-notes');
+
+    const request = store.get(localId);
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+export const getOfflineNotes = async () => {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('local-notes', 'readwrite');
+    const store = transaction.objectStore('local-notes');
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
 
 // Store an offline request in IndexedDB
 export const storeOfflineRequest = async (request) => {
