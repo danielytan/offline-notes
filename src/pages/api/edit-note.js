@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       if (result.acknowledged === true) {
         // Trigger the 'note-edited' event on the 'notes' channel
         const pusherServer = getPusherServer();
-        await pusherServer.trigger('notes', 'note-updated', { _id: id, title: noteTitle } );
+        await pusherServer.trigger('notes2', 'note-updated', { _id: id, title: noteTitle } );
 
         res.status(200).json({ message: 'Note edited successfully' });
       } else {
