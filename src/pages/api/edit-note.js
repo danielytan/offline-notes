@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       const db = await connectToDatabase();
 
       // Edit the note from the database
-      const collection = db.collection('notes');
+      const collection = db.collection('notes2');
       const noteId = new ObjectId(id)
       const result = await collection.updateOne({ "_id": noteId }, {
         $set: {

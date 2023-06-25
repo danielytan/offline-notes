@@ -5,11 +5,11 @@ export const openDB = () => {
     if (db) {
       resolve(db);
     } else {
-      const request = indexedDB.open('offline-notes', 1);
+      const request = indexedDB.open('offline-notes', 2);
 
       request.onupgradeneeded = (event) => {
         db = event.target.result;
-        db.createObjectStore('requests', { keyPath: 'id', autoIncrement: true });
+        //db.createObjectStore('requests', { keyPath: 'id', autoIncrement: true });
         db.createObjectStore('local-notes', { keyPath: 'id', autoIncrement: true });
       };
 

@@ -7,7 +7,7 @@ export default async function handler(req, res) {
       const db = await connectToDatabase();
 
       // Fetch all the notes from the 'notes' collection
-      const collection = db.collection('notes')
+      const collection = db.collection('notes2')
       const notes = (await collection.find({}).toArray()).reverse();
 
       res.status(200).json(notes);

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import SyncIndicator from './SyncIndicator'
+import { Note } from '../utils/notes'
 import { Button } from '../styles/styled';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
@@ -131,14 +132,9 @@ const OfflineIndicatorText = styled.span`
 `;
 
 interface NoteItemProps {
-  note: {
-    _id?: number;
-    title: string;
-    createdAt: string;
-    isCached?: boolean;
-  };
-  onDeleteNote: (noteId: number) => Promise<void>;
-  onEditNote: (noteId: number, updatedTitle: string) => Promise<void>;
+  note: Note,
+  onDeleteNote: (noteId: string) => Promise<void>;
+  onEditNote: (noteId: string, updatedTitle: string) => Promise<void>;
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) => {
@@ -153,8 +149,8 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
 
     try {
       // Make the delete request to the server
-      if (note._id !== undefined) {
-        await onDeleteNote(note._id);
+      if (note.localId !== undefined) {
+        await onDeleteNote(note.localId);
       }
     } catch (error) {
       console.error('Error deleting note:', error);
@@ -169,9 +165,9 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
   };
 
   const handleSave = async () => {
-    if (note._id !== undefined) {
+    if (note.localId !== undefined) {
       setSyncing(true);
-      await onEditNote(note._id, title);
+      await onEditNote(note.localId, title);
       setSyncing(false);
       setIsEditing(false);
     }

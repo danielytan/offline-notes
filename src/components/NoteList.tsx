@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Container, Heading } from '../styles/styled';
 import { SpinnerContainer } from './LoadingSpinner';
 import { pusherClient } from '../utils/pusher'
+import { Note, createNote, submitNote, deleteNote, editNote, getNotes } from '../utils/notes'
 import { storeOfflineRequest, getOfflineRequests, deleteOfflineRequest } from '../../public/indexeddb';
 
 import styled from 'styled-components';
@@ -29,122 +30,36 @@ const NoteListLoadingSpinner = styled(SpinnerContainer)`
   margin-top: 40px;
 `;
 
-interface Note {
-  _id?: number;
-  title: string;
-  createdAt: string;
-  isCached?: boolean; // Add the isCached property to indicate if the note is locally cached
-}
-
 export default function NoteList() {
   const [serverNotes, setServerNotes] = useState<Note[]>([]);
   const [localNotes, setLocalNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleNoteSubmit = useCallback(async (noteTitle: string) => {
-    const note: Note = {
-      title: noteTitle,
-      createdAt: new Date().toUTCString(), // Add the current timestamp
-    };
+    const note: Note = createNote(noteTitle);
+    await submitNote(note);
+    setLocalNotes((prevNotes) => {
+      const updatedNotes = [note, ...prevNotes];
+      return updatedNotes;
+    });
+  }, []);
 
-    // Check if the browser is online
-    if (navigator.onLine) {
-      // Send a POST request to the save-note endpoint
-      try {
-        note.isCached = false
-        const response = await fetch('/api/save-note', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(note),
-        });
-        if (response.ok) {
-          console.log('Note submitted successfully');
-        } else {
-          note.isCached = true
-          console.error('Failed to submit note');
+  const handleNoteDelete = useCallback(async (noteId: string) => {
+    await deleteNote(noteId);
+    fetchLocalNotes();
+  }, []);
+
+  const handleEditNote = useCallback(async (noteId: string, updatedTitle: string) => {
+    editNote(noteId, updatedTitle);
+    setServerNotes((prevNotes) =>
+      prevNotes.map((note) => {
+        if (note.localId === noteId) {
+          note.title = updatedTitle;
+          note.isCached = true;
         }
-      } catch (error) {
-        note.isCached = true
-        console.error('Failed to submit note:', error);
-      }
-    } else {
-      // Store the request in IndexedDB first
-      try {
-        await storeOfflineRequest({
-          url: '/api/save-note',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(note),
-        });
-        note.isCached = true
-        setLocalNotes((prevNotes) => {
-          const updatedNotes = [note, ...prevNotes];
-          return updatedNotes;
-        });
-        console.log('Note stored offline for later sync');
-      } catch (error) {
-        console.error('Failed to store note offline:', error);
-      }
-    }
-  }, []);
-
-  const handleNoteDelete = useCallback(async (noteId: number) => {
-    // Check if the browser is online
-    if (navigator.onLine) {
-      // Make a DELETE request to the API endpoint
-      try {
-        await axios.delete(`/api/delete-note?id=${noteId}`);
-      } catch (error) {
-        console.error('Error deleting note:', error);
-      }
-    } else {
-      // Delete the request from IndexedDB
-      try {
-        await deleteOfflineRequest(noteId);
-        fetchLocalNotes();
-        console.log('Note deleted from offline database');
-      } catch (error) {
-        console.error('Failed to delete note from offline database:', error);
-      }
-    }
-  }, []);
-
-  const handleEditNote = useCallback(async (noteId: number, updatedTitle: string) => {
-    if (navigator.onLine) {
-      try {
-        await axios.put(`/api/edit-note?id=${noteId}`, { title: updatedTitle });
-      } catch (error) {
-        console.error('Failed to edit note:', error);
-      }
-    } else {
-      // Store the request in IndexedDB first
-      try {
-        await storeOfflineRequest({
-          url: '/api/edit-note',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ title: updatedTitle }),
-        });
-        setServerNotes((prevNotes) =>
-          prevNotes.map((note) => {
-            if (note._id === noteId) {
-              note.title = updatedTitle;
-              note.isCached = true;
-            }
-            return note;
-          })
-        );
-        console.log('Note edited offline for later sync');
-      } catch (error) {
-        console.error('Failed to edit note offline:', error);
-      }
-    }
+        return note;
+      })
+    );
   }, []);
 
   const fetchNotes = useCallback(async () => {
@@ -154,8 +69,8 @@ export default function NoteList() {
     // await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
-      const response = await axios.get('/api/notes');
-      setServerNotes(response.data);
+      const notes = await getNotes();
+      setServerNotes(notes);
     } catch (error) {
       console.error('Error fetching notes:', error);
     } finally {
@@ -244,11 +159,10 @@ export default function NoteList() {
   };
 
   const fetchLocalNotes = async() => {
-    let offlineRequests = await getOfflineRequests();
+    let offlineNotes = await getNotes();
     let newLocalNotes: Note[] = [];
-    for (const request of offlineRequests) {
-      const offlineNote = request.body;
-      if (offlineNote._id !== undefined) {
+    for (const offlineNote of offlineNotes) {
+      if (offlineNote.localId !== undefined) {
         newLocalNotes.unshift(offlineNote);
       }
     }

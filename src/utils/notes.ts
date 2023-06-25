@@ -7,25 +7,39 @@ import {
   editOfflineNote
 } from '../../public/indexeddb';
 
-interface Note {
-  _serverId?: number;
-  localId: string;
+export interface Note {
+  _id?: number; // Used by MongoDB
+  localId?: string;
 
   localDeleteSynced?: boolean;
   localEditSynced?: boolean;
   localSubmitSynced?: boolean;
 
+  isCached?: boolean;
+
   title: string;
   createdAt: string;
 }
 
-export async function submitNote(noteTitle: string) {
+function createServerNote(note: Note) {
+  const serverNote: Note = {
+    title: note.title,
+    createdAt: note.createdAt
+  }
+  return serverNote
+}
+
+export function createNote(noteTitle: string) {
   const note: Note = {
     title: noteTitle,
     localId: crypto.randomUUID(),
+    localSubmitSynced: false,
     createdAt: new Date().toUTCString() // Add the current timestamp
   };
+  return note;
+}
 
+export async function submitNote(note: Note) {
   // Store the note in IndexedDB first
   try {
     await storeOfflineNote(note);
@@ -43,11 +57,11 @@ export async function submitNote(noteTitle: string) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(note),
+        body: JSON.stringify(createServerNote(note)),
       });
 
       if (response.ok) {
-        note.localSubmitSynced = true
+        note.localSubmitSynced = undefined;
         console.log('Note submitted successfully');
       } else {
         console.error('Failed to submit note');
@@ -56,15 +70,13 @@ export async function submitNote(noteTitle: string) {
       console.error('Failed to submit note:', error);
     }
   }
-
-  return note;
 }
 
 export async function deleteNote(noteId: string) {
   try {
     const note = await getOfflineNote(noteId);
     if (note !== undefined) {
-      if (note._serverId !== undefined) {
+      if (note._id !== undefined) {
         await deleteOfflineNote(noteId);
       } else {
         // Check if the browser is online
@@ -86,11 +98,11 @@ export async function deleteNote(noteId: string) {
   }
 }
 
-export async function editNote(noteId: number, updatedTitle: string) {
+export async function editNote(noteId: string, updatedTitle: string) {
   try {
     const note = await getOfflineNote(noteId);
     if (note !== undefined) {
-      if (note._serverId !== undefined) {
+      if (note._id !== undefined) {
         await editOfflineNote(noteId, updatedTitle);
       } else {
         // Check if the browser is online
@@ -138,16 +150,17 @@ export async function getNotes() {
       const serverNotes = response.data;
 
       for (const serverNote of serverNotes) {
-        const matchingLocalNote = localNotes.find((localNote: Note) => localNote._serverId === serverNote._serverId);
+        const matchingLocalNote = localNotes.find((localNote: Note) => localNote._id === serverNote._id);
         if (matchingLocalNote !== undefined) {
           if (matchingLocalNote.localDeletedSynced === false) {
-            await axios.delete(`/api/delete-note?id=${matchingLocalNote._serverId}`);
+            await axios.delete(`/api/delete-note?id=${matchingLocalNote._id}`);
             await deleteOfflineNote(matchingLocalNote.localId);
           } else if (matchingLocalNote.localEditSynced === false) {
-            await axios.put(`/api/edit-note?id=${matchingLocalNote._serverId}`, { title: matchingLocalNote.title });
+            await axios.put(`/api/edit-note?id=${matchingLocalNote._id}`, { title: matchingLocalNote.title });
             matchingLocalNote.localSubmitSynced = undefined;
           }
         } else {
+          serverNote.localId = crypto.randomUUID();
           fetchedNotes.push(serverNote);
         }
       }
@@ -156,4 +169,6 @@ export async function getNotes() {
     }
   } else {
   }
+
+  return fetchedNotes;
 }

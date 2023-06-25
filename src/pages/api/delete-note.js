@@ -11,7 +11,7 @@ export default async function handler(req, res) {
       const db = await connectToDatabase();
 
       // Delete the note from the database
-      const collection = db.collection('notes');
+      const collection = db.collection('notes2');
       const noteId = new ObjectId(id)
       const result = await collection.deleteOne({ "_id": noteId });
 
