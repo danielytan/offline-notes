@@ -10,7 +10,7 @@ const NoteItemWrapper = styled.div`
   margin-bottom: 1rem;
 `;
 
-const NoteFrame = styled.li<{ isCached?: boolean }>`
+const NoteFrame = styled.li<{ isSynced?: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -25,7 +25,7 @@ const NoteFrame = styled.li<{ isCached?: boolean }>`
   width: 500px;
   word-wrap: break-word;
   overflow: visible;
-  background-color: ${props => (props.isCached ? '#eee' : 'transparent')};
+  background-color: ${props => (!props.isSynced ? '#eee' : 'transparent')};
 
   .note-timestamp {
     position: absolute;
@@ -187,10 +187,10 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
 
   return (
     <NoteItemWrapper>
-      <NoteFrame isCached={note.isCached}>
+      <NoteFrame isSynced={note.localDeleteSynced !== false && note.localEditSynced !== false && note.localSubmitSynced !== false}>
         {isSyncing && <SyncIndicator/>}
         <DeleteButton onClick={handleDelete}>[x]</DeleteButton>
-        <p className="note-timestamp">{note.createdAt}</p>
+        <p className="note-timestamp">{new Date(note.createdAt).toUTCString()}</p>
         <div className="note-content">
           {isEditing ? (
             <textarea
@@ -212,7 +212,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
           <EditButton onClick={handleEdit}>Edit</EditButton>
         )}
       </NoteFrame>
-      {note.isCached && (
+      {(note.localDeleteSynced === false || note.localEditSynced === false || note.localSubmitSynced === false) && (
         <OfflineIndicatorWrapper>
           <OfflineIndicatorIcon icon={faExclamationCircle} />
           <OfflineIndicatorText>Note not synced</OfflineIndicatorText>

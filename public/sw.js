@@ -1,4 +1,4 @@
-import { storeOfflineRequest, getOfflineRequests, deleteOfflineRequest } from './indexeddb.js';
+import { refreshNotes } from './src/utils/notes';
 
 console.log('Service Worker file loaded');
 
@@ -72,25 +72,9 @@ async function handlePostRequest(request) {
 
 async function syncNotes() {
   console.log('Syncing notes...');
-
-  const offlineRequests = await getOfflineRequests();
-
-  console.log('Offline requests:', offlineRequests);
-
-  for (const request of offlineRequests) {
-    console.log('Processing request:', request);
-
-    try {
-      const response = await fetch(request.url, request);
-
-      if (response.ok) {
-        // Request was successfully sent to the server
-        await deleteOfflineRequest(request.id);
-      } else {
-        console.error('Error syncing note:', response.status);
-      }
-    } catch (error) {
-      console.error('Error syncing note:', error);
-    }
+  try {
+    refreshNotes();
+  } catch (error) {
+    console.error('Error syncing note:', error);
   }
 }
