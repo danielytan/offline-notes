@@ -76,7 +76,7 @@ export default function NoteList() {
           console.log('Service Worker registered:', registration);
   
           // Listen for the "online" event to trigger sync
-          window.addEventListener('online', () => {
+          window.addEventListener('online', async () => {
             registration.sync.register('sync-notes')
               .then(() => {
                 console.log('Sync event registered');
@@ -90,6 +90,11 @@ export default function NoteList() {
           console.error('Service Worker registration failed:', error);
         });
     }
+
+    window.addEventListener('online', async () => {
+      await refreshNotes();
+      setAllNotes(await getNotes());
+    })
 
     const channel = pusherClient?.subscribe('notes2');
 

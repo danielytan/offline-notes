@@ -1,5 +1,3 @@
-import { refreshNotes } from './src/utils/notes';
-
 console.log('Service Worker file loaded');
 
 const CACHE_NAME = 'offline-notes-cache-v1';
@@ -32,6 +30,7 @@ self.addEventListener('activate', (event) => {
   */
 });
 
+/*
 self.addEventListener('fetch', (event) => {
   console.log('Fetching:', event.request.url);
   if (event.request.method === 'POST') {
@@ -39,16 +38,15 @@ self.addEventListener('fetch', (event) => {
   } else {
     event.respondWith(
       caches.match(event.request).then((response) => {
-        /*
         if (response) {
           return response; // Return the cached response if available
         }
-        */
         return fetch(event.request); // Fetch the request from the network
       })
     );
   }
 });
+*/
 
 self.addEventListener('sync', (event) => {
   console.log('Syncing:', event.tag);
@@ -73,7 +71,7 @@ async function handlePostRequest(request) {
 async function syncNotes() {
   console.log('Syncing notes...');
   try {
-    refreshNotes();
+    //refreshNotes();
   } catch (error) {
     console.error('Error syncing note:', error);
   }

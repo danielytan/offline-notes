@@ -187,7 +187,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
 
   return (
     <NoteItemWrapper>
-      <NoteFrame isSynced={note.localDeleteSynced !== false && note.localEditSynced !== false && note.localSubmitSynced !== false}>
+      <NoteFrame isSynced={note.localDeleteSynced !== false && note.localEditSynced !== false && note._id !== undefined}>
         {isSyncing && <SyncIndicator/>}
         <DeleteButton onClick={handleDelete}>[x]</DeleteButton>
         <p className="note-timestamp">{new Date(note.createdAt).toUTCString()}</p>
@@ -212,7 +212,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
           <EditButton onClick={handleEdit}>Edit</EditButton>
         )}
       </NoteFrame>
-      {(note.localDeleteSynced === false || note.localEditSynced === false || note.localSubmitSynced === false) && (
+      {(note.localDeleteSynced === false || note.localEditSynced === false || note._id === undefined) && (
         <OfflineIndicatorWrapper>
           <OfflineIndicatorIcon icon={faExclamationCircle} />
           <OfflineIndicatorText>Note not synced</OfflineIndicatorText>
