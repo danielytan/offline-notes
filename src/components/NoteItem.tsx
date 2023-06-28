@@ -170,6 +170,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
 
   const handleEdit = () => {
     setIsEditing(true);
+    setTitle(note.title);
   };
 
   const handleSave = async () => {
