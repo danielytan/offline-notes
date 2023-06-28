@@ -10,7 +10,7 @@ const NoteItemWrapper = styled.div`
   margin-bottom: 1rem;
 `;
 
-const NoteFrame = styled.li<{ isSynced?: boolean }>`
+const NoteFrame = styled.li<{ isSubmitted?: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -25,7 +25,7 @@ const NoteFrame = styled.li<{ isSynced?: boolean }>`
   width: 500px;
   word-wrap: break-word;
   overflow: visible;
-  background-color: ${props => (!props.isSynced ? '#eee' : 'transparent')};
+  background-color: ${props => (!props.isSubmitted ? '#eee' : 'transparent')};
 
   .note-timestamp {
     position: absolute;
@@ -112,13 +112,21 @@ const EditButton = styled(Button)`
 
 const OfflineIndicatorWrapper = styled.div`
   display: flex;
-  align-items: right;
-  justify-content: right;
+  flex-direction: column; /* Update to column */
+  align-items: flex-end; /* Align text elements to the right */
+  justify-content: flex-end; /* Align text elements to the bottom */
   position: relative;
   bottom: 0;
   right: 0;
   font-size: 0.75rem; /* Adjust the font size to make the icon smaller */
   color: #fff;
+`;
+
+const OfflineIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 0.25rem; /* Add margin-bottom for spacing between pairs */
 `;
 
 const OfflineIndicatorIcon = styled(FontAwesomeIcon)`
@@ -188,7 +196,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
 
   return (
     <NoteItemWrapper>
-      <NoteFrame isSynced={note.localDeleteSynced !== false && note.localEditSynced !== false && note._id !== undefined}>
+      <NoteFrame isSubmitted={note._id !== undefined}>
         {isSyncing && <SyncIndicator/>}
         <DeleteButton onClick={handleDelete}>[x]</DeleteButton>
         <p className="note-timestamp">{new Date(note.createdAt).toUTCString()}</p>
@@ -215,8 +223,24 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
       </NoteFrame>
       {(note.localDeleteSynced === false || note.localEditSynced === false || note._id === undefined) && (
         <OfflineIndicatorWrapper>
-          <OfflineIndicatorIcon icon={faExclamationCircle} />
-          <OfflineIndicatorText>Note not synced</OfflineIndicatorText>
+          {note.localDeleteSynced === false && (
+            <OfflineIndicator>
+              <OfflineIndicatorIcon icon={faExclamationCircle} />
+              <OfflineIndicatorText>Note deletion not synced</OfflineIndicatorText>
+            </OfflineIndicator>
+          )}
+          {note.localEditSynced === false && (
+            <OfflineIndicator>
+              <OfflineIndicatorIcon icon={faExclamationCircle} />
+              <OfflineIndicatorText>Note edit not synced</OfflineIndicatorText>
+            </OfflineIndicator>
+          )}
+          {note._id === undefined && (
+            <OfflineIndicator>
+              <OfflineIndicatorIcon icon={faExclamationCircle} />
+              <OfflineIndicatorText>Note submission not synced</OfflineIndicatorText>
+            </OfflineIndicator>
+          )}
         </OfflineIndicatorWrapper>
       )}
     </NoteItemWrapper>

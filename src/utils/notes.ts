@@ -98,25 +98,24 @@ export async function editNote(noteId: string, updatedTitle: string) {
   try {
     const note = await getOfflineNote(noteId);
     if (note !== undefined) {
-      note.localEditSynced = false;
       if (note._id === undefined) {
         note.title = updatedTitle;
         await editOfflineNote(note);
       } else {
+        note.localEditSynced = false;
         // Check if the browser is online
         if (navigator.onLine) {
           // Make a PUT request to the API endpoint
           try {
+            await axios.put(`/api/edit-note?id=${note._id}`, { title: updatedTitle });
             note.title = updatedTitle;
             note.localEditSynced = undefined;
             await editOfflineNote(note);
-            await axios.put(`/api/edit-note?id=${note._id}`, { title: updatedTitle });
           } catch (error) {
             console.error('Error editing note:', error);
           }
         } else {
           note.title = updatedTitle;
-          note.localEditSynced = false;
           await editOfflineNote(note);
         }
       }
