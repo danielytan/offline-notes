@@ -182,6 +182,7 @@ const NoteItem: React.FC<NoteItemProps> = ({ note, onDeleteNote, onEditNote }) =
     if (isEditing && textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      textareaRef.current.value = note.title;
     }
   }, [isEditing, title]);
 
