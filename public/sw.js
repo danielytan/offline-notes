@@ -1,5 +1,3 @@
-import { storeOfflineRequest, getOfflineRequests, deleteOfflineRequest } from './indexeddb.js';
-
 console.log('Service Worker file loaded');
 
 const CACHE_NAME = 'offline-notes-cache-v1';
@@ -32,6 +30,7 @@ self.addEventListener('activate', (event) => {
   */
 });
 
+/*
 self.addEventListener('fetch', (event) => {
   console.log('Fetching:', event.request.url);
   if (event.request.method === 'POST') {
@@ -39,16 +38,15 @@ self.addEventListener('fetch', (event) => {
   } else {
     event.respondWith(
       caches.match(event.request).then((response) => {
-        /*
         if (response) {
           return response; // Return the cached response if available
         }
-        */
         return fetch(event.request); // Fetch the request from the network
       })
     );
   }
 });
+*/
 
 self.addEventListener('sync', (event) => {
   console.log('Syncing:', event.tag);
@@ -72,25 +70,9 @@ async function handlePostRequest(request) {
 
 async function syncNotes() {
   console.log('Syncing notes...');
-
-  const offlineRequests = await getOfflineRequests();
-
-  console.log('Offline requests:', offlineRequests);
-
-  for (const request of offlineRequests) {
-    console.log('Processing request:', request);
-
-    try {
-      const response = await fetch(request.url, request);
-
-      if (response.ok) {
-        // Request was successfully sent to the server
-        await deleteOfflineRequest(request.id);
-      } else {
-        console.error('Error syncing note:', response.status);
-      }
-    } catch (error) {
-      console.error('Error syncing note:', error);
-    }
+  try {
+    //refreshNotes();
+  } catch (error) {
+    console.error('Error syncing note:', error);
   }
 }

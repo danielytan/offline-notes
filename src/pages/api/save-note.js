@@ -10,12 +10,12 @@ export default async function handler(req, res) {
       const db = await connectToDatabase();
 
       // Save the note data to the database
-      const collection = db.collection('notes');
+      const collection = db.collection('notes2');
       const savedNote = await collection.insertOne(noteData);
 
       // Trigger the 'note-saved' event on the 'notes' channel
       const pusherServer = getPusherServer();
-      await pusherServer.trigger('notes', 'note-saved', noteData);
+      await pusherServer.trigger('notes2', 'note-saved', noteData);
 
       res.status(200).json(savedNote);
     } catch (error) {

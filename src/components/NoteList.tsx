@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { Container, Heading } from '../styles/styled';
 import { SpinnerContainer } from './LoadingSpinner';
 import { pusherClient } from '../utils/pusher'
-import { storeOfflineRequest, getOfflineRequests, deleteOfflineRequest } from '../../public/indexeddb';
+import { Note,
+  createNote, submitNote, deleteNote, editNote, refreshNotes, getNotes,
+  updateSavedNote, updateEditedNote, updateDeletedNote
+} from '../utils/notes'
 
 import styled from 'styled-components';
-import axios from 'axios';
 
 import NoteForm from './NoteForm';
 import NoteItem from './NoteItem';
@@ -26,125 +28,28 @@ const NoteListWrapper = styled.div`
 `;
 
 const NoteListLoadingSpinner = styled(SpinnerContainer)`
-  margin-top: 40px;
+  margin-top: 20px;
+  margin-bottom: 10px;
 `;
 
-interface Note {
-  _id?: number;
-  title: string;
-  createdAt: string;
-  isCached?: boolean; // Add the isCached property to indicate if the note is locally cached
-}
-
 export default function NoteList() {
-  const [serverNotes, setServerNotes] = useState<Note[]>([]);
-  const [localNotes, setLocalNotes] = useState<Note[]>([]);
+  const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleNoteSubmit = useCallback(async (noteTitle: string) => {
-    const note: Note = {
-      title: noteTitle,
-      createdAt: new Date().toUTCString(), // Add the current timestamp
-    };
-
-    // Check if the browser is online
-    if (navigator.onLine) {
-      // Send a POST request to the save-note endpoint
-      try {
-        note.isCached = false
-        const response = await fetch('/api/save-note', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(note),
-        });
-        if (response.ok) {
-          console.log('Note submitted successfully');
-        } else {
-          note.isCached = true
-          console.error('Failed to submit note');
-        }
-      } catch (error) {
-        note.isCached = true
-        console.error('Failed to submit note:', error);
-      }
-    } else {
-      // Store the request in IndexedDB first
-      try {
-        await storeOfflineRequest({
-          url: '/api/save-note',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(note),
-        });
-        note.isCached = true
-        setLocalNotes((prevNotes) => {
-          const updatedNotes = [note, ...prevNotes];
-          return updatedNotes;
-        });
-        console.log('Note stored offline for later sync');
-      } catch (error) {
-        console.error('Failed to store note offline:', error);
-      }
-    }
+    const note: Note = createNote(noteTitle);
+    await submitNote(note);
+    setAllNotes(await getNotes());
   }, []);
 
-  const handleNoteDelete = useCallback(async (noteId: number) => {
-    // Check if the browser is online
-    if (navigator.onLine) {
-      // Make a DELETE request to the API endpoint
-      try {
-        await axios.delete(`/api/delete-note?id=${noteId}`);
-      } catch (error) {
-        console.error('Error deleting note:', error);
-      }
-    } else {
-      // Delete the request from IndexedDB
-      try {
-        await deleteOfflineRequest(noteId);
-        fetchLocalNotes();
-        console.log('Note deleted from offline database');
-      } catch (error) {
-        console.error('Failed to delete note from offline database:', error);
-      }
-    }
+  const handleNoteDelete = useCallback(async (noteId: string) => {
+    await deleteNote(noteId);
+    setAllNotes(await getNotes());
   }, []);
 
-  const handleEditNote = useCallback(async (noteId: number, updatedTitle: string) => {
-    if (navigator.onLine) {
-      try {
-        await axios.put(`/api/edit-note?id=${noteId}`, { title: updatedTitle });
-      } catch (error) {
-        console.error('Failed to edit note:', error);
-      }
-    } else {
-      // Store the request in IndexedDB first
-      try {
-        await storeOfflineRequest({
-          url: '/api/edit-note',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ title: updatedTitle }),
-        });
-        setServerNotes((prevNotes) =>
-          prevNotes.map((note) => {
-            if (note._id === noteId) {
-              note.title = updatedTitle;
-              note.isCached = true;
-            }
-            return note;
-          })
-        );
-        console.log('Note edited offline for later sync');
-      } catch (error) {
-        console.error('Failed to edit note offline:', error);
-      }
-    }
+  const handleEditNote = useCallback(async (noteId: string, updatedTitle: string) => {
+    await editNote(noteId, updatedTitle);
+    setAllNotes(await getNotes());
   }, []);
 
   const fetchNotes = useCallback(async () => {
@@ -154,21 +59,13 @@ export default function NoteList() {
     // await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
-      const response = await axios.get('/api/notes');
-      setServerNotes(response.data);
+      await refreshNotes();
+      setAllNotes(await getNotes());
     } catch (error) {
       console.error('Error fetching notes:', error);
     } finally {
       setLoading(false);
     }
-  
-    fetchLocalNotes();
-
-    /*
-    notes.sort(function(x, y) {
-      return x.date - y.date;
-    })
-    */
   }, []);
 
   useEffect(() => {
@@ -180,7 +77,7 @@ export default function NoteList() {
           console.log('Service Worker registered:', registration);
   
           // Listen for the "online" event to trigger sync
-          window.addEventListener('online', () => {
+          window.addEventListener('online', async () => {
             registration.sync.register('sync-notes')
               .then(() => {
                 console.log('Sync event registered');
@@ -195,85 +92,45 @@ export default function NoteList() {
         });
     }
 
-    const channel = pusherClient?.subscribe('notes');
+    window.addEventListener('online', async () => {
+      await fetchNotes();
+    })
+
+    const channel = pusherClient?.subscribe('notes2');
 
     if (channel) {
-      channel.bind('note-saved', async (data: any) => {
-        const savedNote = data; // Assuming the event payload contains the saved note data
-        setServerNotes((prevNotes) => {
-          const updatedNotes = [savedNote, ...prevNotes];
-          return removeDuplicates(updatedNotes);
-        });
-
-        // Delete local note if synced from server
-        fetchLocalNotes();
+      channel.bind('note-saved', async (savedNote: Note) => {
+        updateSavedNote(savedNote, await getNotes());
+        setAllNotes(await getNotes());
       });
 
-      channel.bind('note-updated', (data: any) => {
-        setServerNotes((prevNotes) =>
-          prevNotes.map((note) => {
-            if (note._id === data._id) {
-              note.title = data.title;
-            }
-            return note;
-          })
-        );
+      channel.bind('note-updated', async (updatedNote: Note) => {
+        updateEditedNote(updatedNote, await getNotes());
+        setAllNotes(await getNotes());
       });
       
-      channel.bind('note-deleted', (data: any) => {
-        const deletedNoteId = data; // Assuming the event payload contains the ID of the deleted note
-        setServerNotes((prevNotes) => prevNotes.filter((note) => note._id !== deletedNoteId));
+      channel.bind('note-deleted', async (deletedNoteId: number) => {
+        updateDeletedNote(deletedNoteId, await getNotes());
+        setAllNotes(await getNotes());
       });
     }
 
     return () => {
-      pusherClient?.unsubscribe('notes');
+      pusherClient?.unsubscribe('notes2');
     };
   }, [handleNoteSubmit, fetchNotes]);
-
-  const removeDuplicates = (notes: Note[]) => {
-    const uniqueNotes = notes.reduce((uniqueList: Note[], note: Note) => {
-      if (!uniqueList.some((uniqueNote) => uniqueNote._id === note._id)) {
-        uniqueList.push(note);
-      } else {
-        console.log('Duplicate note found:', note);
-      }
-      return uniqueList;
-    }, []);
-    return uniqueNotes;
-  };
-
-  const fetchLocalNotes = async() => {
-    let offlineRequests = await getOfflineRequests();
-    let newLocalNotes: Note[] = [];
-    for (const request of offlineRequests) {
-      const offlineNote = request.body;
-      if (offlineNote._id !== undefined) {
-        newLocalNotes.unshift(offlineNote);
-      }
-    }
-    setLocalNotes(newLocalNotes);
-  };
 
   return (
     <NotesContainer>
       <Heading>Notes</Heading>
       <NoteListWrapper>
         <NoteForm onNoteSubmit={handleNoteSubmit} />
-        <div>
-          {loading ? (
-            <NoteListLoadingSpinner />
-          ) : (
-            <ul>
-              {localNotes.map((note, index) => (
-                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} onEditNote={handleEditNote} />
-              ))}
-              {serverNotes.map((note, index) => (
-                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} onEditNote={handleEditNote} />
-              ))}
-            </ul>
-          )}
-        </div>
+        {loading && <NoteListLoadingSpinner />}
+        <ul>
+          {allNotes.map((note, index) => (
+            <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} onEditNote={handleEditNote} />
+          ))}
+        </ul>
       </NoteListWrapper>
       <OfflineIndicator />
     </NotesContainer>

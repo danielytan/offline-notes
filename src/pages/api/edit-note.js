@@ -12,8 +12,9 @@ export default async function handler(req, res) {
       const db = await connectToDatabase();
 
       // Edit the note from the database
-      const collection = db.collection('notes');
+      const collection = db.collection('notes2');
       const noteId = new ObjectId(id)
+
       const result = await collection.updateOne({ "_id": noteId }, {
         $set: {
           title: noteTitle
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
       if (result.acknowledged === true) {
         // Trigger the 'note-edited' event on the 'notes' channel
         const pusherServer = getPusherServer();
-        await pusherServer.trigger('notes', 'note-updated', { _id: id, title: noteTitle } );
+        await pusherServer.trigger('notes2', 'note-updated', { _id: id, title: noteTitle } );
 
         res.status(200).json({ message: 'Note edited successfully' });
       } else {
