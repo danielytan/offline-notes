@@ -28,7 +28,8 @@ const NoteListWrapper = styled.div`
 `;
 
 const NoteListLoadingSpinner = styled(SpinnerContainer)`
-  margin-top: 40px;
+  margin-top: 20px;
+  margin-bottom: 10px;
 `;
 
 export default function NoteList() {
@@ -92,8 +93,7 @@ export default function NoteList() {
     }
 
     window.addEventListener('online', async () => {
-      await refreshNotes();
-      setAllNotes(await getNotes());
+      await fetchNotes();
     })
 
     const channel = pusherClient?.subscribe('notes2');
@@ -125,17 +125,12 @@ export default function NoteList() {
       <Heading>Notes</Heading>
       <NoteListWrapper>
         <NoteForm onNoteSubmit={handleNoteSubmit} />
-        <div>
-          {loading ? (
-            <NoteListLoadingSpinner />
-          ) : (
-            <ul>
-              {allNotes.map((note, index) => (
-                <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} onEditNote={handleEditNote} />
-              ))}
-            </ul>
-          )}
-        </div>
+        {loading && <NoteListLoadingSpinner />}
+        <ul>
+          {allNotes.map((note, index) => (
+            <NoteItem key={index} note={note} onDeleteNote={handleNoteDelete} onEditNote={handleEditNote} />
+          ))}
+        </ul>
       </NoteListWrapper>
       <OfflineIndicator />
     </NotesContainer>
